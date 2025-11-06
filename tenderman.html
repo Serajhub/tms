@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IFMIS - Tender Management</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            primary: '#1E40AF',
+            gradientStart: '#3B82F6',
+            gradientEnd: '#8B5CF6',
+            urgent: '#FECACA',
+            info: '#DBEAFE',
+            warning: '#FEF3C7',
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    .header-gradient {
+      background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+    }
+    .sidebar {
+      transition: all 0.3s ease;
+      width: 64px; /* collapsed */
+    }
+    .sidebar.expanded {
+      width: 256px; /* expanded */
+    }
+    .sidebar-link {
+      transition: all 0.2s ease;
+    }
+    .sidebar-link:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      padding-left: 1.25rem;
+    }
+    .sidebar-link.active {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      font-weight: 600;
+      border-left: 4px solid #10B981;
+      padding-left: 1.25rem;
+    }
+    .sidebar-text {
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .sidebar.expanded .sidebar-text {
+      opacity: 1;
+    }
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+    .toast {
+      transition: all 0.3s ease;
+      transform: translateX(120%);
+      opacity: 0;
+    }
+    .toast.show {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    .rich-text-editor { border: 1px solid #d1d5db; border-radius: 0.5rem; padding: 0.75rem; min-height: 120px; }
+    .rich-text-toolbar { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
+    .rich-text-toolbar button { padding: 0.25rem 0.5rem; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 0.25rem; cursor: pointer; }
+    .rich-text-toolbar button:hover { background: #e5e7eb; }
+    .rich-text-toolbar button.active { background: #1E40AF; color: white; }
+  </style>
+</head>
+
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen">
+
+  <!-- ==================== HEADER ==================== -->
+  <header class="header-gradient text-white shadow-lg sticky top-0 z-50">
+    <div class="px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+      <!-- Left: Burger + Logo -->
+      <div class="flex items-center space-x-3">
+        <!-- Burger Button -->
+        <button id="burgerBtn" class="p-2 rounded-md hover:bg-white/10 transition">
+          <i class="fas fa-bars text-xl"></i>
+        </button>
+
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 bg-white rounded flex items-center justify-center">
+            <span class="text-primary font-bold text-sm">IF</span>
+          </div>
+          <div>
+            <h1 class="text-lg font-bold">IFMIS</h1>
+            <p class="text-xs opacity-90">Tender Management</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Notifications + Theme -->
+      <div class="flex items-center space-x-3">
+        <button id="notifyBtn" class="relative p-2 rounded-full hover:bg-white/10 transition">
+          <i class="fas fa-bell text-lg"></i>
+          <span class="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
+        </button>
+        <button id="themeToggle" class="p-2 rounded-full hover:bg-white/10 transition">
+          <i class="fas fa-moon text-lg"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== LAYOUT (Sidebar + Main) ==================== -->
+  <div class="flex">
+
+    <!-- ==================== SIDEBAR ==================== -->
+    <aside id="sidebar" class="sidebar fixed lg:static inset-y-0 left-0 bg-primary text-white z-40 overflow-hidden">
+      <nav class="mt-20 lg:mt-6 px-3 space-y-1">
+        <a href="dashboard.html" class="sidebar-link flex items-center space-x-3 py-3 rounded-lg">
+          <i class="fas fa-tachometer-alt w-5"></i>
+          <span class="sidebar-text whitespace-nowrap">Dashboard</span>
+        </a>
+        <a href="vendorman.html" class="sidebar-link flex items-center space-x-3 py-3 rounded-lg">
+          <i class="fas fa-users w-5"></i>
+          <span class="sidebar-text whitespace-nowrap">Vendor Management</span>
+        </a>
+        <a href="#" class="sidebar-link flex items-center space-x-3 py-3 rounded-lg active">
+          <i class="fas fa-file-contract w-5"></i>
+          <span class="sidebar-text whitespace-nowrap">Tender Management</span>
+        </a>
+        <a href="bill.html" target="_blank" class="sidebar-link flex items-center space-x-3 py-3 rounded-lg">
+          <i class="fas fa-file-invoice-dollar w-5"></i>
+          <span class="sidebar-text whitespace-nowrap">Bill Verification</span>
+        </a>
+        <a href="dashboard.html#tracking" class="sidebar-link flex items-center space-x-3 py-3 rounded-lg">
+          <i class="fas fa-tasks w-5"></i>
+          <span class="sidebar-text whitespace-nowrap">Tender Progress Tracking</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- ==================== MAIN CONTENT ==================== -->
+    <main class="flex-1 p-6 lg:p-8 max-w-7xl mx-auto w-full">
+      <div class="mb-8">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white">
+          Tender Management
+        </h2>
+        <p class="text-gray-600 dark:text-gray-400">Create, view, and manage tenders efficiently</p>
+      </div>
+
+      <!-- ==================== SEARCH & FILTER ==================== -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+        <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div class="flex-1 md:w-1/3">
+            <input type="text" id="searchInput" placeholder="Search tenders..." class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600">
+          </div>
+          <div class="flex gap-2">
+            <select id="statusFilter" class="p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600">
+              <option value="">All Status</option>
+              <option value="Active">Active</option>
+              <option value="Draft">Draft</option>
+              <option value="Closed">Closed</option>
+            </select>
+            <button onclick="openTenderModal('create')" class="px-4 py-3 bg-green-600 text-white rounded-lg flex items-center space-x-2 hover:bg-green-700 transition">
+              <i class="fas fa-plus"></i>
+              <span>Create New Tender</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== TENDERS TABLE ==================== -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+              <tr class="text-left border-b dark:border-gray-700">
+                <th class="py-3 px-4 font-semibold">TENDER ID</th>
+                <th class="py-3 px-4 font-semibold">TITLE</th>
+                <th class="py-3 px-4 font-semibold">TYPE</th>
+                <th class="py-3 px-4 font-semibold">CATEGORY</th>
+                <th class="py-3 px-4 font-semibold">BUDGET (₹)</th>
+                <th class="py-3 px-4 font-semibold">DEADLINE</th>
+                <th class="py-3 px-4 font-semibold">STATUS</th>
+                <th class="py-3 px-4 font-semibold">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody id="tenderTableBody">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ==================== PAGINATION ==================== -->
+      <div class="flex justify-between items-center mt-6">
+        <div class="text-sm text-gray-600 dark:text-gray-400">
+          Showing <span id="showingCount">1</span> to <span id="totalCount">10</span> of <span id="totalTenders">10</span> tenders
+        </div>
+        <div class="flex space-x-2">
+          <button class="px-3 py-2 border rounded-lg disabled:opacity-50" id="prevPage">Previous</button>
+          <span id="pageInfo" class="px-3 py-2">Page 1</span>
+          <button class="px-3 py-2 border rounded-lg disabled:opacity-50" id="nextPage">Next</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ==================== ADD/EDIT TENDER MODAL ==================== -->
+  <div id="tenderModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-4xl w-full max-h-[95vh] overflow-y-auto p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 id="tenderModalTitle" class="text-xl font-bold">Create New Tender</h3>
+        <button onclick="closeTenderModal()" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <form id="tenderForm">
+        <div class="space-y-6">
+          <div>
+            <label for="tenderTitle" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tender Title <span class="text-red-500">*</span></label>
+            <input type="text" id="tenderTitle" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600" required />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tender Reference No.</label>
+            <input type="text" id="tenderRef" class="w-full p-3 border rounded-lg bg-gray-100 dark:bg-gray-600" readonly />
+          </div>
+          <div>
+            <label for="tenderDescription" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description / Details <span class="text-red-500">*</span></label>
+            <div class="rich-text-editor border rounded-lg dark:border-gray-600">
+              <div class="rich-text-toolbar">
+                <button type="button" onclick="formatText('bold')" title="Bold"><i class="fas fa-bold"></i></button>
+                <button type="button" onclick="formatText('italic')" title="Italic"><i class="fas fa-italic"></i></button>
+                <button type="button" onclick="formatText('insertUnorderedList')" title="Bullets"><i class="fas fa-list-ul"></i></button>
+                <button type="button" onclick="insertAttachment()" title="Attachment"><i class="fas fa-paperclip"></i></button>
+              </div>
+              <div id="tenderDescription" contenteditable="true" class="outline-none min-h-[100px] p-2" required></div>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="tenderType" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tender Type <span class="text-red-500">*</span></label>
+              <select id="tenderType" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600" required>
+                <option value="">Select type</option>
+                <option value="Open">Open Tender</option>
+                <option value="Limited">Limited Tender</option>
+                <option value="Quotation">Quotation</option>
+              </select>
+            </div>
+            <div>
+              <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category <span class="text-red-500">*</span></label>
+              <select id="category" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600" required>
+                <option value="">Select category</option>
+                <option value="Infrastructure">Infrastructure</option>
+                <option value="IT">IT</option>
+                <option value="Services">Services</option>
+                <option value="Procurement">Procurement</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="budget" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Budget Amount (₹) <span class="text-red-500">*</span></label>
+              <input type="number" id="budget" step="0.01" min="0" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600" required />
+            </div>
+            <div>
+              <label for="publishDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Publish Date <span class="text-red-500">*</span></label>
+              <input type="date" id="publishDate" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600" required />
+            </div>
+          </div>
+          <div>
+            <label for="deadline" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bid Submission Deadline <span class="text-red-500">*</span></label>
+            <input type="date" id="deadline" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600" required />
+          </div>
+          <div>
+            <label for="eligibleVendors" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Eligible Vendors <span class="text-red-500">*</span></label>
+            <select id="eligibleVendors" multiple class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600 h-32" required>
+              <!-- Populated by JS -->
+            </select>
+            <p class="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple. Only approved vendors shown.</p>
+          </div>
+          <div>
+            <label for="documents" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Document Upload</label>
+            <input type="file" id="documents" multiple accept=".pdf,.doc,.docx,.zip" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600" />
+          </div>
+          <div>
+            <label for="terms" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Terms & Conditions</label>
+            <textarea id="terms" rows="4" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600" placeholder="Enter terms..."></textarea>
+          </div>
+          <div class="flex justify-end space-x-3 mt-6">
+            <button type="button" onclick="closeTenderModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition">Cancel</button>
+            <button type="button" onclick="saveDraft()" class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition">Save Draft</button>
+            <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition">Publish Tender</button>
+          </div>
+        </div>
+      </form>
+      <p id="tenderStatus" class="text-sm text-gray-500 mt-2 hidden">Status: Draft</p>
+    </div>
+  </div>
+
+  <!-- ==================== VIEW TENDER MODAL ==================== -->
+  <div id="viewTenderModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold">Tender Details</h3>
+        <button onclick="closeViewTenderModal()" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div id="viewTenderBody" class="space-y-4">
+        <!-- Filled by JS -->
+      </div>
+      <div class="flex justify-end space-x-3 mt-6">
+        <button onclick="closeViewTenderModal()" class="px-4 py-2 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TOAST CONTAINER ==================== -->
+  <div id="toastContainer" class="fixed right-4 top-20 space-y-3 z-50"></div>
+
+  <!-- ==================== JS ==================== -->
+  <script>
+    // -------------------------------------------------
+    // 1. Sidebar / Theme / Toast
+    // -------------------------------------------------
+    const burgerBtn = document.getElementById('burgerBtn');
+    const sidebar = document.getElementById('sidebar');
+    burgerBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('expanded');
+      burgerBtn.innerHTML = sidebar.classList.contains('expanded')
+        ? '<i class="fas fa-times text-xl"></i>'
+        : '<i class="fas fa-bars text-xl"></i>';
+    });
+
+    const themeToggle = document.getElementById('themeToggle');
+    const html = document.documentElement;
+    themeToggle.addEventListener('click', () => {
+      if (html.classList.contains('dark')) {
+        html.classList.remove('dark');
+        themeToggle.innerHTML = '<i class="fas fa-moon text-lg"></i>';
+        localStorage.setItem('theme', 'light');
+      } else {
+        html.classList.add('dark');
+        themeToggle.innerHTML = '<i class="fas fa-sun text-lg"></i>';
+        localStorage.setItem('theme', 'dark');
+      }
+    });
+    if (localStorage.getItem('theme') === 'dark' ||
+        (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      html.classList.add('dark');
+      themeToggle.innerHTML = '<i class="fas fa-sun text-lg"></i>';
+    }
+
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = `toast p-4 rounded-xl shadow-xl text-white flex items-center space-x-3 min-w-80 backdrop-blur-sm border border-white/20 ${
+        type === 'success' ? 'bg-green-600' :
+        type === 'warning' ? 'bg-amber-600' :
+        type === 'danger' ? 'bg-red-600' : 'bg-primary'
+      }`;
+      toast.innerHTML = `
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'warning' ? 'fa-exclamation-triangle' : type === 'danger' ? 'fa-times-circle' : 'fa-info-circle'}"></i>
+        <div class="flex-1"><p class="font-medium">${message}</p></div>
+        <button class="text-white/70 hover:text-white" onclick="this.parentElement.remove()">X</button>
+      `;
+      document.getElementById('toastContainer').appendChild(toast);
+      setTimeout(() => toast.classList.add('show'), 100);
+      setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 4000);
+    }
+
+    // -------------------------------------------------
+    // 2. Vendor Data (for eligible vendors)
+    // -------------------------------------------------
+    const vendorDB = [
+      { id: '#V001', name: 'ABC Supplies Ltd.', category: 'Electronics', status: 'approved' },
+      { id: '#V002', name: 'XYZ Trading Co.', category: 'Stationery', status: 'approved' }
+    ];
+
+    // -------------------------------------------------
+    // 3. Tender Data
+    // -------------------------------------------------
+    let tenderDB = [
+      {
+        id: 'TNDR/2025/001',
+        title: 'Supply of Office Stationery',
+        type: 'Open',
+        category: 'Procurement',
+        budget: '50000',
+        deadline: '2025-11-15',
+        status: 'Active'
+      },
+      {
+        id: 'TNDR/2025/002',
+        title: 'IT Infrastructure Upgrade',
+        type: 'Limited',
+        category: 'IT',
+        budget: '250000',
+        deadline: '2025-11-20',
+        status: 'Draft'
+      },
+      {
+        id: 'TNDR/2025/003',
+        title: 'Consulting Services for Project Management',
+        type: 'Quotation',
+        category: 'Services',
+        budget: '150000',
+        deadline: '2025-11-10',
+        status: 'Closed'
+      }
+    ];
+
+    let currentPage = 1;
+    const itemsPerPage = 10;
+    let currentTender = null;
+    let editMode = false;
+
+    // -------------------------------------------------
+    // 4. Initialize
+    // -------------------------------------------------
+    function initTenderPage() {
+      populateTenderTable();
+      populateEligibleVendors();
+      setupEventListeners();
+      updatePagination();
+    }
+
+    function setupEventListeners() {
+      document.getElementById('searchInput').addEventListener('input', filterTenders);
+      document.getElementById('statusFilter').addEventListener('change', filterTenders);
+      document.getElementById('prevPage').addEventListener('click', () => {
+        if (currentPage > 1) {
+          currentPage--;
+          populateTenderTable();
+          updatePagination();
+        }
+      });
+      document.getElementById('nextPage').addEventListener('click', () => {
+        if (currentPage < getTotalPages()) {
+          currentPage++;
+          populateTenderTable();
+          updatePagination();
+        }
+      });
+      document.getElementById('tenderForm').addEventListener('submit', publishTender);
+      const deadlineInput = document.getElementById('deadline');
+      deadlineInput.addEventListener('change', function() {
+        const publish = document.getElementById('publishDate').value;
+        if (this.value <= publish) {
+          showToast('Deadline must be after publish date.', 'warning');
+          this.value = '';
+        }
+      });
+    }
+
+    // -------------------------------------------------
+    // 5. Table Population & Filtering
+    // -------------------------------------------------
+    function populateTenderTable(filteredTenders = null) {
+      const tenders = filteredTenders || tenderDB;
+      const start = (currentPage - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      const pageTenders = tenders.slice(start, end);
+
+      const tbody = document.getElementById('tenderTableBody');
+      tbody.innerHTML = pageTenders.map(t => `
+        <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+          <td class="py-3 px-4">${t.id}</td>
+          <td class="py-3 px-4 font-medium">${t.title}</td>
+          <td class="py-3 px-4">${t.type}</td>
+          <td class="py-3 px-4">${t.category}</td>
+          <td class="py-3 px-4">₹${t.budget}</td>
+          <td class="py-3 px-4">${new Date(t.deadline).toLocaleDateString()}</td>
+          <td class="py-3 px-4">
+            <span class="px-2 py-1 ${
+              t.status === 'Active' ? 'bg-green-100 text-green-800' :
+              t.status === 'Draft' ? 'bg-yellow-100 text-yellow-800' :
+              'bg-red-100 text-red-800'
+            } rounded-full text-xs">${t.status}</span>
+          </td>
+          <td class="py-3 px-4">
+            <button onclick="viewTender('${t.id}')" class="text-primary hover:underline mr-2">View</button>
+            <button onclick="editTender('${t.id}')" class="text-blue-600 hover:underline mr-2">Edit</button>
+            <button onclick="deleteTender('${t.id}')" class="text-red-600 hover:underline">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function filterTenders() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const status = document.getElementById('statusFilter').value;
+      const filtered = tenderDB.filter(t => 
+        (t.title.toLowerCase().includes(search) || t.id.toLowerCase().includes(search)) &&
+        (!status || t.status === status)
+      );
+      currentPage = 1;
+      populateTenderTable(filtered);
+      updatePagination(filtered.length);
+    }
+
+    function updatePagination(total = tenderDB.length) {
+      const totalPages = Math.ceil(total / itemsPerPage);
+      document.getElementById('prevPage').disabled = currentPage === 1;
+      document.getElementById('nextPage').disabled = currentPage === totalPages;
+      document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
+      document.getElementById('showingCount').textContent = Math.min(currentPage * itemsPerPage, total);
+      document.getElementById('totalCount').textContent = Math.min((currentPage - 1) * itemsPerPage + 1, total);
+      document.getElementById('totalTenders').textContent = total;
+    }
+
+    function getTotalPages() {
+      return Math.ceil(tenderDB.length / itemsPerPage);
+    }
+
+    function populateEligibleVendors() {
+      const select = document.getElementById('eligibleVendors');
+      select.innerHTML = '';
+      vendorDB.filter(v => v.status === 'approved').forEach(v => {
+        const option = document.createElement('option');
+        option.value = v.id;
+        option.textContent = `${v.name} (${v.category})`;
+        select.appendChild(option);
+      });
+    }
+
+    // -------------------------------------------------
+    // 6. Modal Functions
+    // -------------------------------------------------
+    function openTenderModal(mode, id = null) {
+      const today = new Date().toISOString().split('T')[0];
+      editMode = (mode === 'edit');
+      currentTender = id ? tenderDB.find(t => t.id === id) : null;
+      const modalTitle = document.getElementById('tenderModalTitle');
+      const submitBtn = document.querySelector('#tenderForm button[type="submit"]');
+
+      if (mode === 'create') {
+        document.getElementById('tenderForm').reset();
+        document.getElementById('tenderDescription').innerHTML = '';
+        const nextId = `TNDR/2025/${String(tenderDB.filter(t => !t.id.startsWith('DRAFT')).length + 1).padStart(3, '0')}`;
+        document.getElementById('tenderRef').value = nextId;
+        document.getElementById('publishDate').value = today;
+        modalTitle.textContent = 'Create New Tender';
+        submitBtn.textContent = 'Publish Tender';
+        document.getElementById('tenderStatus').classList.add('hidden');
+      } else if (mode === 'edit' && currentTender) {
+        document.getElementById('tenderTitle').value = currentTender.title;
+        document.getElementById('tenderRef').value = currentTender.id;
+        document.getElementById('tenderDescription').innerHTML = currentTender.description || '';
+        document.getElementById('tenderType').value = currentTender.type;
+        document.getElementById('category').value = currentTender.category;
+        document.getElementById('budget').value = currentTender.budget;
+        document.getElementById('publishDate').value = today;
+        document.getElementById('deadline').value = currentTender.deadline;
+        // Select eligible vendors if stored
+        if (currentTender.eligibleVendors) {
+          Array.from(document.getElementById('eligibleVendors').options).forEach(opt => {
+            opt.selected = currentTender.eligibleVendors.includes(opt.value);
+          });
+        }
+        document.getElementById('terms').value = currentTender.terms || '';
+        modalTitle.textContent = `Edit Tender: ${currentTender.title}`;
+        submitBtn.textContent = 'Update Tender';
+        document.getElementById('tenderStatus').classList.add('hidden');
+      }
+      document.getElementById('tenderModal').classList.remove('hidden');
+    }
+
+    function closeTenderModal() {
+      document.getElementById('tenderModal').classList.add('hidden');
+      document.getElementById('tenderForm').reset();
+      document.getElementById('tenderDescription').innerHTML = '';
+      currentTender = null;
+      editMode = false;
+    }
+
+    function viewTender(id) {
+      currentTender = tenderDB.find(t => t.id === id);
+      if (currentTender) {
+        document.getElementById('viewTenderBody').innerHTML = `
+          <div class="space-y-2">
+            <div><strong>ID:</strong> ${currentTender.id}</div>
+            <div><strong>Title:</strong> ${currentTender.title}</div>
+            <div><strong>Type:</strong> ${currentTender.type}</div>
+            <div><strong>Category:</strong> ${currentTender.category}</div>
+            <div><strong>Budget:</strong> ₹${currentTender.budget}</div>
+            <div><strong>Deadline:</strong> ${new Date(currentTender.deadline).toLocaleDateString()}</div>
+            <div><strong>Description:</strong> <div class="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded">${currentTender.description || 'N/A'}</div></div>
+            <div><strong>Status:</strong> <span class="px-2 py-1 ${
+              currentTender.status === 'Active' ? 'bg-green-100 text-green-800' :
+              currentTender.status === 'Draft' ? 'bg-yellow-100 text-yellow-800' :
+              'bg-red-100 text-red-800'
+            } rounded-full text-xs">${currentTender.status}</span></div>
+          </div>
+        `;
+        document.getElementById('viewTenderModal').classList.remove('hidden');
+      }
+    }
+
+    function closeViewTenderModal() {
+      document.getElementById('viewTenderModal').classList.add('hidden');
+    }
+
+    function editTender(id) {
+      openTenderModal('edit', id);
+    }
+
+    function deleteTender(id) {
+      if (confirm('Delete this tender? This action cannot be undone.')) {
+        tenderDB = tenderDB.filter(t => t.id !== id);
+        filterTenders();
+        showToast('Tender deleted!', 'warning');
+      }
+    }
+
+    function formatText(command) {
+      document.execCommand(command, false, null);
+    }
+
+    function insertAttachment() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.pdf,.doc,.docx';
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(file);
+          link.textContent = `[Attachment: ${file.name}]`;
+          link.style.color = '#1E40AF';
+          const desc = document.getElementById('tenderDescription');
+          desc.appendChild(link);
+          desc.appendChild(document.createElement('br'));
+        }
+      };
+      input.click();
+    }
+
+    function validateForm() {
+      const form = document.getElementById('tenderForm');
+      if (!form.checkValidity()) {
+        showToast('Please fill all required fields.', 'warning');
+        return false;
+      }
+      const selectedVendors = Array.from(document.getElementById('eligibleVendors').selectedOptions).map(opt => opt.value);
+      if (selectedVendors.length === 0) {
+        showToast('Please select at least one eligible vendor.', 'warning');
+        return false;
+      }
+      return true;
+    }
+
+    function publishTender(e) {
+      e.preventDefault();
+      if (!validateForm()) return;
+
+      const commonData = {
+        title: document.getElementById('tenderTitle').value,
+        type: document.getElementById('tenderType').value,
+        category: document.getElementById('category').value,
+        budget: document.getElementById('budget').value,
+        deadline: document.getElementById('deadline').value,
+        description: document.getElementById('tenderDescription').innerHTML,
+        eligibleVendors: Array.from(document.getElementById('eligibleVendors').selectedOptions).map(opt => opt.value),
+        terms: document.getElementById('terms').value
+      };
+
+      if (editMode && currentTender) {
+        Object.assign(currentTender, commonData);
+        currentTender.status = 'Active';
+        showToast('Tender updated successfully!', 'success');
+      } else {
+        const newId = `TNDR/2025/${String(tenderDB.filter(t => !t.id.startsWith('DRAFT')).length + 1).padStart(3, '0')}`;
+        const newTender = {
+          id: newId,
+          status: 'Active',
+          ...commonData
+        };
+        tenderDB.unshift(newTender);
+        showToast('Tender published successfully!', 'success');
+      }
+      filterTenders();
+      closeTenderModal();
+    }
+
+    function saveDraft() {
+      if (!validateForm()) return;
+
+      const commonData = {
+        title: document.getElementById('tenderTitle').value,
+        type: document.getElementById('tenderType').value,
+        category: document.getElementById('category').value,
+        budget: document.getElementById('budget').value,
+        deadline: document.getElementById('deadline').value,
+        description: document.getElementById('tenderDescription').innerHTML,
+        eligibleVendors: Array.from(document.getElementById('eligibleVendors').selectedOptions).map(opt => opt.value),
+        terms: document.getElementById('terms').value
+      };
+
+      if (editMode && currentTender) {
+        Object.assign(currentTender, commonData);
+        currentTender.status = 'Draft';
+        showToast('Tender updated as Draft.', 'success');
+      } else {
+        const draftId = `DRAFT/${Date.now()}`;
+        const draftTender = {
+          id: draftId,
+          status: 'Draft',
+          ...commonData
+        };
+        tenderDB.unshift(draftTender);
+        showToast('Tender saved as Draft.', 'success');
+      }
+      document.getElementById('tenderStatus').textContent = 'Status: Draft';
+      document.getElementById('tenderStatus').classList.remove('hidden');
+      filterTenders();
+    }
+
+    // -------------------------------------------------
+    // 7. Demo
+    // -------------------------------------------------
+    document.getElementById('notifyBtn').addEventListener('click', () => showToast('3 new tender applications.', 'info'));
+
+    // Initialize on load
+    initTenderPage();
+  </script>
+</body>
+</html>

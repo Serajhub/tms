@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IFMIS - Vendor Management</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            primary: '#1E40AF',
+            gradientStart: '#3B82F6',
+            gradientEnd: '#8B5CF6',
+            urgent: '#FECACA',
+            info: '#DBEAFE',
+            warning: '#FEF3C7',
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    .header-gradient {
+      background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+    }
+    .sidebar {
+      transition: all 0.3s ease;
+      width: 64px; /* collapsed */
+    }
+    .sidebar.expanded {
+      width: 256px; /* expanded */
+    }
+    .sidebar-link {
+      transition: all 0.2s ease;
+    }
+    .sidebar-link:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      padding-left: 1.25rem;
+    }
+    .sidebar-link.active {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      font-weight: 600;
+      border-left: 4px solid #10B981;
+      padding-left: 1.25rem;
+    }
+    .sidebar-text {
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .sidebar.expanded .sidebar-text {
+      opacity: 1;
+    }
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+    .toast {
+      transition: all 0.3s ease;
+      transform: translateX(120%);
+      opacity: 0;
+    }
+    .toast.show {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    .chart-container {
+      position: relative;
+      height: 300px;
+    }
+    .bulk-actions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .rating-stars {
+      color: #fbbf24;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen">
+
+  <!-- ==================== HEADER ==================== -->
+  <header class="header-gradient text-white shadow-lg sticky top-0 z-50">
+    <div class="px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+      <!-- Left: Burger + Logo -->
+      <div class="flex items-center space-x-3">
+        <!-- Burger Button -->
+        <button id="burgerBtn" class="p-2 rounded-md hover:bg-white/10 transition">
+          <i class="fas fa-bars text-xl"></i>
+        </button>
+
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 bg-white rounded flex items-center justify-center">
+            <span class="text-primary font-bold text-sm">IF</span>
+          </div>
+          <div>
+            <h1 class="text-lg font-bold">IFMIS</h1>
+            <p class="text-xs opacity-90">Vendor Management</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Notifications + Theme -->
+      <div class="flex items-center space-x-3">
+        <button id="notifyBtn" class="relative p-2 rounded-full hover:bg-white/10 transition">
+          <i class="fas fa-bell text-lg"></i>
+          <span class="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
+        </button>
+        <button id="themeToggle" class="p-2 rounded-full hover:bg-white/10 transition">
+          <i class="fas fa-moon text-lg"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== LAYOUT (Sidebar + Main) ==================== -->
+  <div class="flex">
+
+    <!-- ==================== SIDEBAR ==================== -->
+    <aside id="sidebar" class="sidebar fixed lg:static inset-y-0 left-0 bg-primary text-white z-40 overflow-hidden">
+      <nav class="mt-20 lg:mt-6 px-3 space-y-1">
+        <a href="dashboard.html" class="sidebar-link flex items-center space-x-3 py-3 rounded-lg">
+          <i class="fas fa-tachometer-alt w-5"></i>
+          <span class="sidebar-text whitespace-nowrap">Dashboard</span>
+        </a>
+        <a href="#" class="sidebar-link flex items-center space-x-3 py-3 rounded-lg active">
+          <i class="fas fa-users w-5"></i>
+          <span class="sidebar-text whitespace-nowrap">Vendor Management</span>
+        </a>
+        <a href="tenderman.html" class="sidebar-link flex items-center space-x-3 py-3 rounded-lg">
+          <i class="fas fa-file-contract w-5"></i>
+          <span class="sidebar-text whitespace-nowrap">Tender Management</span>
+        </a>
+        <a href="bill.html" class="sidebar-link flex items-center space-x-3 py-3 rounded-lg">
+          <i class="fas fa-file-invoice-dollar w-5"></i>
+          <span class="sidebar-text whitespace-nowrap">Bill Verification</span>
+        </a>
+        <a href="dashboard.html#tracking" class="sidebar-link flex items-center space-x-3 py-3 rounded-lg">
+          <i class="fas fa-tasks w-5"></i>
+          <span class="sidebar-text whitespace-nowrap">Tender Progress Tracking</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- ==================== MAIN CONTENT ==================== -->
+    <main class="flex-1 p-6 lg:p-8 max-w-7xl mx-auto w-full">
+      <div class="mb-8">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white">
+          Vendor Management
+        </h2>
+        <p class="text-gray-600 dark:text-gray-400">View, approve, manage, and analyze vendor performance</p>
+      </div>
+
+      <!-- ==================== TABS ==================== -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
+        <div class="flex space-x-8 border-b border-gray-200 dark:border-gray-700">
+          <button class="tab-btn active pb-2 border-b-2 border-primary text-primary font-medium" data-tab="list">Vendor List</button>
+          <button class="tab-btn pb-2 text-gray-600 dark:text-gray-400" data-tab="metrics">Performance Metrics</button>
+          <button class="tab-btn pb-2 text-gray-600 dark:text-gray-400" data-tab="comparison">Vendor Comparison</button>
+        </div>
+
+        <!-- ==================== VENDOR LIST TAB ==================== -->
+        <div id="list" class="tab-content p-6">
+          <!-- ==================== SEARCH & FILTER ==================== -->
+          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+            <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+              <div class="flex-1 md:w-1/3">
+                <input type="text" id="searchInput" placeholder="Search vendors..." class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600">
+              </div>
+              <div class="flex gap-2">
+                <select id="statusFilter" class="p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600">
+                  <option value="">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+                <select id="categoryFilter" class="p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600">
+                  <option value="">All Categories</option>
+                  <option value="Electronics">Electronics</option>
+                  <option value="Stationery">Stationery</option>
+                  <option value="Construction">Construction</option>
+                  <option value="Services">Services</option>
+                  <option value="IT">IT</option>
+                </select>
+                <div class="bulk-actions">
+                  <input type="checkbox" id="selectAll" class="mr-2">
+                  <label for="selectAll" class="text-sm">Select All</label>
+                </div>
+                <button onclick="openAddVendorModal()" class="px-4 py-3 bg-primary text-white rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition">
+                  <i class="fas fa-user-plus"></i>
+                  <span>Add New Vendor</span>
+                </button>
+                <button onclick="bulkApprove()" class="px-4 py-3 bg-green-600 text-white rounded-lg flex items-center space-x-2 hover:bg-green-700 transition hidden" id="bulkApproveBtn">
+                  <i class="fas fa-check"></i>
+                  <span>Bulk Approve</span>
+                </button>
+                <button onclick="bulkReject()" class="px-4 py-3 bg-red-600 text-white rounded-lg flex items-center space-x-2 hover:bg-red-700 transition hidden" id="bulkRejectBtn">
+                  <i class="fas fa-times"></i>
+                  <span>Bulk Reject</span>
+                </button>
+                <button onclick="exportVendors()" class="px-4 py-3 bg-gray-600 text-white rounded-lg flex items-center space-x-2 hover:bg-gray-700 transition">
+                  <i class="fas fa-download"></i>
+                  <span>Export</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ==================== VENDORS TABLE ==================== -->
+          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                  <tr class="text-left border-b dark:border-gray-700">
+                    <th class="py-3 px-4 font-semibold">
+                      <input type="checkbox" id="selectAllHeader" class="mr-2">
+                      VENDOR ID
+                    </th>
+                    <th class="py-3 px-4 font-semibold">VENDOR NAME</th>
+                    <th class="py-3 px-4 font-semibold">CATEGORY</th>
+                    <th class="py-3 px-4 font-semibold">REGISTRATION DATE</th>
+                    <th class="py-3 px-4 font-semibold">STATUS</th>
+                    <th class="py-3 px-4 font-semibold">OVERALL SCORE</th>
+                    <th class="py-3 px-4 font-semibold">ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody id="vendorTableBody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ==================== PAGINATION ==================== -->
+          <div class="flex justify-between items-center mt-6">
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+              Showing <span id="showingCount">1</span> to <span id="totalCount">10</span> of <span id="totalVendors">10</span> vendors
+            </div>
+            <div class="flex space-x-2">
+              <button class="px-3 py-2 border rounded-lg disabled:opacity-50" id="prevPage">Previous</button>
+              <span id="pageInfo" class="px-3 py-2">Page 1</span>
+              <button class="px-3 py-2 border rounded-lg disabled:opacity-50" id="nextPage">Next</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== PERFORMANCE METRICS TAB ==================== -->
+        <div id="metrics" class="tab-content hidden p-6">
+          <!-- ==================== METRICS STATS ==================== -->
+          <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 stat-card">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">Total Vendors</p>
+                  <p class="text-2xl font-bold text-primary" id="totalVendorsCount">15</p>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-users text-primary"></i>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 stat-card">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">Avg Performance Score</p>
+                  <p class="text-2xl font-bold text-green-600" id="avgPerformanceScore">4.2</p>
+                </div>
+                <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-star text-green-600"></i>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 stat-card">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">On-Time Delivery Rate</p>
+                  <p class="text-2xl font-bold text-purple-600" id="onTimeDeliveryRate">92%</p>
+                </div>
+                <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-clock text-purple-600"></i>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 stat-card">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">Top Performing Vendors</p>
+                  <p class="text-2xl font-bold text-orange-600" id="topVendorsCount">3</p>
+                </div>
+                <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-trophy text-orange-600"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ==================== CHARTS ==================== -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Performance Score Distribution -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h3 class="text-lg font-semibold mb-4">Performance Score Distribution</h3>
+              <div class="chart-container">
+                <canvas id="performancePieChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Vendor Rating Trends -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h3 class="text-lg font-semibold mb-4">Vendor Rating Trends</h3>
+              <div class="chart-container">
+                <canvas id="ratingLineChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- ==================== VENDOR PERFORMANCE TABLE ==================== -->
+          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h3 class="text-lg font-semibold mb-4">Vendor Performance Overview</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                  <tr class="text-left border-b dark:border-gray-700">
+                    <th class="py-3 px-4 font-semibold">Vendor</th>
+                    <th class="py-3 px-4 font-semibold">Overall Score</th>
+                    <th class="py-3 px-4 font-semibold">On-Time Delivery</th>
+                    <th class="py-3 px-4 font-semibold">Quality Rating</th>
+                    <th class="py-3 px-4 font-semibold">Tenders Won</th>
+                    <th class="py-3 px-4 font-semibold">Payment Compliance</th>
+                    <th class="py-3 px-4 font-semibold">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="vendorMetricsBody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== VENDOR COMPARISON TAB ==================== -->
+        <div id="comparison" class="tab-content hidden p-6">
+          <!-- ==================== COMPARISON TOOL ==================== -->
+          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+            <h3 class="text-lg font-semibold mb-4">Vendor Comparison</h3>
+            <div class="flex flex-col md:flex-row gap-4">
+              <div class="flex-1">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Vendors to Compare</label>
+                <select id="vendor1Select" multiple class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600 h-32" size="4">
+                  <!-- Populated by JS -->
+                </select>
+              </div>
+              <div class="flex-1">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">vs</label>
+                <select id="vendor2Select" multiple class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600 h-32" size="4">
+                  <!-- Populated by JS -->
+                </select>
+              </div>
+              <button onclick="compareVendors()" class="mt-4 px-6 py-3 bg-primary text-white rounded-lg hover:bg-blue-700 transition">Compare</button>
+            </div>
+          </div>
+
+          <!-- ==================== COMPARISON RESULTS ==================== -->
+          <div id="comparisonResults" class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hidden">
+            <h3 class="text-lg font-semibold mb-4">Comparison Results</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                  <tr class="text-left border-b dark:border-gray-700">
+                    <th class="py-3 px-4 font-semibold">Metric</th>
+                    <th class="py-3 px-4 font-semibold">Vendor 1</th>
+                    <th class="py-3 px-4 font-semibold">Vendor 2</th>
+                    <th class="py-3 px-4 font-semibold">Winner</th>
+                  </tr>
+                </thead>
+                <tbody id="comparisonTableBody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== ADD/EDIT VENDOR MODAL ==================== -->
+      <div id="vendorModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 id="vendorModalTitle" class="text-lg font-bold">Add New Vendor</h3>
+            <button onclick="closeVendorModal()" class="text-gray-500 hover:text-gray-700">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <form id="vendorForm">
+            <div class="space-y-4">
+              <div>
+                <label for="vendorName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Vendor Name <span class="text-red-500">*</span></label>
+                <input type="text" id="vendorName" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600" required />
+              </div>
+              <div>
+                <label for="vendorEmail" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email <span class="text-red-500">*</span></label>
+                <input type="email" id="vendorEmail" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600" required />
+              </div>
+              <div>
+                <label for="vendorPhone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone <span class="text-red-500">*</span></label>
+                <input type="tel" id="vendorPhone" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600" required />
+              </div>
+              <div>
+                <label for="vendorCategory" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category <span class="text-red-500">*</span></label>
+                <select id="vendorCategory" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600" required>
+                  <option value="">Select category</option>
+                  <option value="Electronics">Electronics</option>
+                  <option value="Stationery">Stationery</option>
+                  <option value="Construction">Construction</option>
+                  <option value="Services">Services</option>
+                  <option value="IT">IT</option>
+                </select>
+              </div>
+              <div>
+                <label for="vendorAddress" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address</label>
+                <textarea id="vendorAddress" rows="3" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600"></textarea>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label for="gstNumber" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">GST Number</label>
+                  <input type="text" id="gstNumber" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600">
+                </div>
+                <div>
+                  <label for="panNumber" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">PAN Number</label>
+                  <input type="text" id="panNumber" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600">
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Upload Documents</label>
+                <input type="file" id="vendorDocuments" multiple accept=".pdf,.jpg,.png" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600">
+                <p class="text-xs text-gray-500 mt-1">Upload GST, PAN, Bank Proof etc.</p>
+              </div>
+              <div class="flex justify-end space-x-3 mt-6">
+                <button type="button" onclick="closeVendorModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition">Save Vendor</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- ==================== VIEW VENDOR MODAL ==================== -->
+      <div id="viewVendorModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold">Vendor Details</h3>
+            <button onclick="closeViewVendorModal()" class="text-gray-500 hover:text-gray-700">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div id="viewVendorBody" class="space-y-4">
+            <!-- Filled by JS -->
+          </div>
+          <div class="flex justify-end space-x-3 mt-6">
+            <button onclick="closeViewVendorModal()" class="px-4 py-2 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">Close</button>
+            <button id="approveBtn" onclick="approveVendor()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 hidden">Approve</button>
+            <button id="rejectBtn" onclick="rejectVendor()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 hidden">Reject</button>
+            <button onclick="rateVendor()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Rate Vendor</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== RATE VENDOR MODAL ==================== -->
+      <div id="rateVendorModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold">Rate Vendor</h3>
+            <button onclick="closeRateVendorModal()" class="text-gray-500 hover:text-gray-700">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="text-center mb-4">
+            <div class="rating-stars text-3xl mb-2" id="starRating">★★★★☆</div>
+            <p id="vendorToRate" class="font-medium"></p>
+          </div>
+          <div class="flex justify-center space-x-1 mb-4">
+            <button type="button" onclick="setRating(1)" class="text-gray-400 hover:text-yellow-400">★</button>
+            <button type="button" onclick="setRating(2)" class="text-gray-400 hover:text-yellow-400">★</button>
+            <button type="button" onclick="setRating(3)" class="text-gray-400 hover:text-yellow-400">★</button>
+            <button type="button" onclick="setRating(4)" class="text-gray-400 hover:text-yellow-400">★</button>
+            <button type="button" onclick="setRating(5)" class="text-gray-400 hover:text-yellow-400">★</button>
+          </div>
+          <textarea id="ratingComment" placeholder="Optional comment..." class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600" rows="3"></textarea>
+          <div class="flex justify-end space-x-3 mt-6">
+            <button onclick="closeRateVendorModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">Cancel</button>
+            <button onclick="submitRating()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700">Submit Rating</button>
+          </div>
+        </div>
+  </div>
+
+  <!-- ==================== TOAST CONTAINER ==================== -->
+  <div id="toastContainer" class="fixed right-4 top-20 space-y-3 z-50"></div>
+
+  <!-- ==================== JS ==================== -->
+  <script>
+    // -------------------------------------------------
+    // 1. Sidebar / Theme / Toast
+    // -------------------------------------------------
+    const burgerBtn = document.getElementById('burgerBtn');
+    const sidebar = document.getElementById('sidebar');
+    burgerBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('expanded');
+      burgerBtn.innerHTML = sidebar.classList.contains('expanded')
+        ? '<i class="fas fa-times text-xl"></i>'
+        : '<i class="fas fa-bars text-xl"></i>';
+    });
+
+    const themeToggle = document.getElementById('themeToggle');
+    const html = document.documentElement;
+    themeToggle.addEventListener('click', () => {
+      if (html.classList.contains('dark')) {
+        html.classList.remove('dark');
+        themeToggle.innerHTML = '<i class="fas fa-moon text-lg"></i>';
+        localStorage.setItem('theme', 'light');
+      } else {
+        html.classList.add('dark');
+        themeToggle.innerHTML = '<i class="fas fa-sun text-lg"></i>';
+        localStorage.setItem('theme', 'dark');
+      }
+    });
+    if (localStorage.getItem('theme') === 'dark' ||
+        (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      html.classList.add('dark');
+      themeToggle.innerHTML = '<i class="fas fa-sun text-lg"></i>';
+    }
+
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = `toast p-4 rounded-xl shadow-xl text-white flex items-center space-x-3 min-w-80 backdrop-blur-sm border border-white/20 ${
+        type === 'success' ? 'bg-green-600' :
+        type === 'warning' ? 'bg-amber-600' :
+        type === 'danger' ? 'bg-red-600' : 'bg-primary'
+      }`;
+      toast.innerHTML = `
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'warning' ? 'fa-exclamation-triangle' : type === 'danger' ? 'fa-times-circle' : 'fa-info-circle'}"></i>
+        <div class="flex-1"><p class="font-medium">${message}</p></div>
+        <button class="text-white/70 hover:text-white" onclick="this.parentElement.remove()">X</button>
+      `;
+      document.getElementById('toastContainer').appendChild(toast);
+      setTimeout(() => toast.classList.add('show'), 100);
+      setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 4000);
+    }
+
+    // -------------------------------------------------
+    // 2. Vendor Data
+    // -------------------------------------------------
+    let vendorDB = [
+      {
+        id: '#V001',
+        name: 'ABC Supplies Ltd.',
+        email: 'abc@supplies.com',
+        phone: '+91 98765 43210',
+        category: 'Electronics',
+        regDate: '2025-01-13',
+        address: '123 Main St, City',
+        gst: 'GST123456789',
+        pan: 'ABCDE1234F',
+        status: 'approved',
+        docs: ['gst_abc.pdf', 'pan_abc.jpg'],
+        performance: {
+          overallScore: 4.5,
+          onTimeDelivery: 95,
+          qualityRating: 4.6,
+          tendersWon: 12,
+          paymentCompliance: 98,
+          totalBills: 15,
+          totalAmount: 450000
+        }
+      },
+      {
+        id: '#V002',
+        name: 'XYZ Trading Co.',
+        email: 'xyz@trade.in',
+        phone: '+91 91234 56789',
+        category: 'Stationery',
+        regDate: '2025-01-18',
+        address: '456 Oak Ave, Town',
+        gst: 'GST987654321',
+        pan: 'XYZAB5678C',
+        status: 'pending',
+        docs: ['gst_xyz.pdf'],
+        performance: {
+          overallScore: 3.8,
+          onTimeDelivery: 88,
+          qualityRating: 3.9,
+          tendersWon: 8,
+          paymentCompliance: 92,
+          totalBills: 10,
+          totalAmount: 120000
+        }
+      },
+      {
+        id: '#V003',
+        name: 'Tech Solutions Pvt.',
+        email: 'tech@solutions.com',
+        phone: '+91 99887 77665',
+        category: 'IT',
+        regDate: '2025-02-01',
+        address: '789 Pine Rd, Metro',
+        gst: 'GST112233445',
+        pan: 'TECHJ9012K',
+        status: 'approved',
+        docs: ['pan_tech.jpg'],
+        performance: {
+          overallScore: 4.2,
+          onTimeDelivery: 90,
+          qualityRating: 4.3,
+          tendersWon: 15,
+          paymentCompliance: 95,
+          totalBills: 20,
+          totalAmount: 750000
+        }
+      }
+    ];
+
+    let currentPage = 1;
+    const itemsPerPage = 10;
+    let currentVendor = null;
+    let selectedVendors = [];
+
+    // -------------------------------------------------
+    // 3. Initialize
+    // -------------------------------------------------
+    function initVendorPage() {
+      populateVendorTable();
+      populateVendorMetrics();
+      populateVendorSelects();
+      setupEventListeners();
+      updatePagination();
+    }
+
+    function setupEventListeners() {
+      // Tab switching
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          const tab = this.getAttribute('data-tab');
+          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active', 'border-primary', 'text-primary'));
+          this.classList.add('active', 'border-primary', 'text-primary');
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+          document.getElementById(tab).classList.remove('hidden');
+        });
+      });
+
+      document.getElementById('searchInput').addEventListener('input', filterVendors);
+      document.getElementById('statusFilter').addEventListener('change', filterVendors);
+      document.getElementById('categoryFilter').addEventListener('change', filterVendors);
+      document.getElementById('prevPage').addEventListener('click', () => {
+        if (currentPage > 1) {
+          currentPage--;
+          populateVendorTable();
+          updatePagination();
+        }
+      });
+      document.getElementById('nextPage').addEventListener('click', () => {
+        if (currentPage < getTotalPages()) {
+          currentPage++;
+          populateVendorTable();
+          updatePagination();
+        }
+      });
+      document.getElementById('vendorForm').addEventListener('submit', saveVendor);
+      document.getElementById('selectAllHeader').addEventListener('change', toggleSelectAll);
+
+      // Bulk actions
+      document.querySelectorAll('tbody tr input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', updateBulkButtons);
+      });
+    }
+
+    // -------------------------------------------------
+    // 4. Vendor List Table Population & Filtering
+    // -------------------------------------------------
+    function populateVendorTable(filteredVendors = null) {
+      const vendors = filteredVendors || vendorDB;
+      const start = (currentPage - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      const pageVendors = vendors.slice(start, end);
+
+      const tbody = document.getElementById('vendorTableBody');
+      tbody.innerHTML = pageVendors.map((v, index) => {
+        const globalIndex = start + index + 1;
+        return `
+          <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+            <td class="py-3 px-4">
+              <input type="checkbox" value="${v.id}" class="vendor-checkbox mr-2">
+              ${v.id}
+            </td>
+            <td class="py-3 px-4 font-medium">${v.name}</td>
+            <td class="py-3 px-4">${v.category}</td>
+            <td class="py-3 px-4">${new Date(v.regDate).toLocaleDateString()}</td>
+            <td class="py-3 px-4">
+              <span class="px-2 py-1 ${
+                v.status === 'approved' ? 'bg-green-100 text-green-800' :
+                v.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-red-100 text-red-800'
+              } rounded-full text-xs">${v.status.charAt(0).toUpperCase() + v.status.slice(1)}</span>
+            </td>
+            <td class="py-3 px-4">${v.performance.overallScore}</td>
+            <td class="py-3 px-4">
+              <button onclick="viewVendor('${v.id}')" class="text-primary hover:underline mr-2">View</button>
+              <button onclick="editVendor('${v.id}')" class="text-blue-600 hover:underline mr-2">Edit</button>
+              <button onclick="deleteVendor('${v.id}')" class="text-red-600 hover:underline">Delete</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // Re-attach event listeners for checkboxes
+      document.querySelectorAll('tbody tr input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', updateBulkButtons);
+      });
+    }
+
+    function filterVendors() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const status = document.getElementById('statusFilter').value;
+      const category = document.getElementById('categoryFilter').value;
+      const filtered = vendorDB.filter(v => 
+        (v.name.toLowerCase().includes(search) || v.email.toLowerCase().includes(search) || v.id.toLowerCase().includes(search)) &&
+        (!status || v.status === status) &&
+        (!category || v.category === category)
+      );
+      currentPage = 1;
+      populateVendorTable(filtered);
+      updatePagination(filtered.length);
+    }
+
+    function updatePagination(total = vendorDB.length) {
+      const totalPages = Math.ceil(total / itemsPerPage);
+      document.getElementById('prevPage').disabled = currentPage === 1;
+      document.getElementById('nextPage').disabled = currentPage === totalPages;
+      document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
+      document.getElementById('showingCount').textContent = Math.min(currentPage * itemsPerPage, total);
+      document.getElementById('totalCount').textContent = Math.min((currentPage - 1) * itemsPerPage + 1, total);
+      document.getElementById('totalVendors').textContent = total;
+    }
+
+    function getTotalPages() {
+      return Math.ceil(vendorDB.length / itemsPerPage);
+    }
+
+    // Bulk actions
+    function toggleSelectAll() {
+      const checkboxes = document.querySelectorAll('.vendor-checkbox');
+      checkboxes.forEach(cb => cb.checked = document.getElementById('selectAllHeader').checked);
+      updateBulkButtons();
+    }
+
+    function updateBulkButtons() {
+      const selected = document.querySelectorAll('.vendor-checkbox:checked').length;
+      const bulkBtns = document.querySelectorAll('#bulkApproveBtn, #bulkRejectBtn');
+      bulkBtns.forEach(btn => btn.classList.toggle('hidden', selected === 0));
+    }
+
+    function bulkApprove() {
+      const selectedIds = Array.from(document.querySelectorAll('.vendor-checkbox:checked')).map(cb => cb.value);
+      selectedIds.forEach(id => {
+        const vendor = vendorDB.find(v => v.id === id);
+        if (vendor && vendor.status === 'pending') {
+          vendor.status = 'approved';
+        }
+      });
+      filterVendors();
+      populateVendorMetrics();
+      document.getElementById('selectAllHeader').checked = false;
+      updateBulkButtons();
+      showToast(`${selectedIds.length} vendors approved!`, 'success');
+    }
+
+    function bulkReject() {
+      const selectedIds = Array.from(document.querySelectorAll('.vendor-checkbox:checked')).map(cb => cb.value);
+      selectedIds.forEach(id => {
+        const vendor = vendorDB.find(v => v.id === id);
+        if (vendor && vendor.status === 'pending') {
+          vendor.status = 'rejected';
+        }
+      });
+      filterVendors();
+      populateVendorMetrics();
+      document.getElementById('selectAllHeader').checked = false;
+      updateBulkButtons();
+      showToast(`${selectedIds.length} vendors rejected!`, 'danger');
+    }
+
+    function exportVendors() {
+      let csv = 'ID,Name,Email,Phone,Category,RegDate,Status,OverallScore,OnTimeDelivery,QualityRating,TendersWon,PaymentCompliance\n';
+      vendorDB.forEach(v => {
+        csv += `"${v.id}","${v.name}","${v.email}","${v.phone}","${v.category}","${v.regDate}","${v.status}","${v.performance.overallScore}","${v.performance.onTimeDelivery}","${v.performance.qualityRating}","${v.performance.tendersWon}","${v.performance.paymentCompliance}"\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'vendors.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Vendors exported successfully!', 'success');
+    }
+
+    // -------------------------------------------------
+    // 5. Vendor Metrics Population
+    // -------------------------------------------------
+    function populateVendorMetrics() {
+      // Update stats
+      const totalVendors = vendorDB.length;
+      const avgScore = (vendorDB.reduce((sum, v) => sum + v.performance.overallScore, 0) / totalVendors).toFixed(1);
+      const onTimeAvg = (vendorDB.reduce((sum, v) => sum + v.performance.onTimeDelivery, 0) / totalVendors).toFixed(0);
+      const topVendors = vendorDB.filter(v => v.performance.overallScore >= 4.5).length;
+
+      document.getElementById('totalVendorsCount').textContent = totalVendors;
+      document.getElementById('avgPerformanceScore').textContent = avgScore;
+      document.getElementById('onTimeDeliveryRate').textContent = `${onTimeAvg}%`;
+      document.getElementById('topVendorsCount').textContent = topVendors;
+
+      // Performance Score Distribution Pie Chart
+      const performanceCtx = document.getElementById('performancePieChart').getContext('2d');
+      const scoreData = {
+        '4.0-4.5': vendorDB.filter(v => v.performance.overallScore >= 4.0 && v.performance.overallScore < 4.5).length,
+        '4.5-5.0': vendorDB.filter(v => v.performance.overallScore >= 4.5).length,
+        '<4.0': vendorDB.filter(v => v.performance.overallScore < 4.0).length
+      };
+      new Chart(performanceCtx, {
+        type: 'pie',
+        data: {
+          labels: Object.keys(scoreData),
+          datasets: [{
+            data: Object.values(scoreData),
+            backgroundColor: ['#EF4444', '#10B981', '#F59E0B']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false
+        }
+      });
+
+      // Vendor Rating Trends Line Chart
+      const ratingCtx = document.getElementById('ratingLineChart').getContext('2d');
+      new Chart(ratingCtx, {
+        type: 'line',
+        data: {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+          datasets: [{
+            label: 'Avg Rating',
+            data: [3.8, 4.0, 4.2, 4.1, 4.3],
+            borderColor: 'rgba(59, 130, 246, 1)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 5
+            }
+          }
+        }
+      });
+
+      // Vendor Performance Table
+      const tbody = document.getElementById('vendorMetricsBody');
+      tbody.innerHTML = vendorDB.map(v => `
+        <tr class="border-b dark:border-gray-700">
+          <td class="py-3 px-4 font-medium">${v.name}</td>
+          <td class="py-3 px-4">${v.performance.overallScore}</td>
+          <td class="py-3 px-4">${v.performance.onTimeDelivery}%</td>
+          <td class="py-3 px-4">${v.performance.qualityRating}</td>
+          <td class="py-3 px-4">${v.performance.tendersWon}</td>
+          <td class="py-3 px-4">${v.performance.paymentCompliance}%</td>
+          <td class="py-3 px-4">
+            <button onclick="viewVendor('${v.id}')" class="text-primary hover:underline">View Details</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // Vendor Comparison
+    function populateVendorSelects() {
+      const selects = [document.getElementById('vendor1Select'), document.getElementById('vendor2Select')];
+      selects.forEach(select => {
+        select.innerHTML = '';
+        vendorDB.forEach(v => {
+          const option = document.createElement('option');
+          option.value = v.id;
+          option.textContent = v.name;
+          select.appendChild(option);
+        });
+      });
+    }
+
+    function compareVendors() {
+      const v1Id = document.getElementById('vendor1Select').value;
+      const v2Id = document.getElementById('vendor2Select').value;
+      if (!v1Id || !v2Id || v1Id === v2Id) {
+        showToast('Please select two different vendors.', 'warning');
+        return;
+      }
+
+      const v1 = vendorDB.find(v => v.id === v1Id);
+      const v2 = vendorDB.find(v => v.id === v2Id);
+      if (!v1 || !v2) return;
+
+      const metrics = [
+        { name: 'Overall Score', v1: v1.performance.overallScore, v2: v2.performance.overallScore },
+        { name: 'On-Time Delivery (%)', v1: v1.performance.onTimeDelivery, v2: v2.performance.onTimeDelivery },
+        { name: 'Quality Rating', v1: v1.performance.qualityRating, v2: v2.performance.qualityRating },
+        { name: 'Tenders Won', v1: v1.performance.tendersWon, v2: v2.performance.tendersWon },
+        { name: 'Payment Compliance (%)', v1: v1.performance.paymentCompliance, v2: v2.performance.paymentCompliance }
+      ];
+
+      const tbody = document.getElementById('comparisonTableBody');
+      tbody.innerHTML = metrics.map(m => {
+        const winner = m.v1 > m.v2 ? v1.name : m.v2 > m.v1 ? v2.name : 'Tie';
+        return `
+          <tr class="border-b dark:border-gray-700">
+            <td class="py-3 px-4">${m.name}</td>
+            <td class="py-3 px-4">${m.v1}</td>
+            <td class="py-3 px-4">${m.v2}</td>
+            <td class="py-3 px-4 font-bold ${m.v1 > m.v2 ? 'text-green-600' : m.v2 > m.v1 ? 'text-red-600' : ''}">${winner}</td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('comparisonResults').classList.remove('hidden');
+    }
+
+    // -------------------------------------------------
+    // 6. Modal Functions
+    // -------------------------------------------------
+    function openAddVendorModal() {
+      document.getElementById('vendorModalTitle').textContent = 'Add New Vendor';
+      document.getElementById('vendorForm').reset();
+      currentVendor = null;
+      document.getElementById('vendorModal').classList.remove('hidden');
+    }
+
+    function editVendor(id) {
+      currentVendor = vendorDB.find(v => v.id === id);
+      if (currentVendor) {
+        document.getElementById('vendorModalTitle').textContent = 'Edit Vendor';
+        document.getElementById('vendorName').value = currentVendor.name;
+        document.getElementById('vendorEmail').value = currentVendor.email;
+        document.getElementById('vendorPhone').value = currentVendor.phone;
+        document.getElementById('vendorCategory').value = currentVendor.category;
+        document.getElementById('vendorAddress').value = currentVendor.address || '';
+        document.getElementById('gstNumber').value = currentVendor.gst || '';
+        document.getElementById('panNumber').value = currentVendor.pan || '';
+        document.getElementById('vendorModal').classList.remove('hidden');
+      }
+    }
+
+    function viewVendor(id) {
+      const vendor = vendorDB.find(v => v.id === id);
+      if (vendor) {
+        const docsHTML = vendor.docs.map(d => `
+          <div class="border p-3 rounded flex justify-between items-center">
+            <span><strong>Document:</strong> ${d}</span>
+            <a href="#" class="text-primary hover:underline text-sm">Download</a>
+          </div>
+        `).join('');
+
+        const approveBtn = document.getElementById('approveBtn');
+        const rejectBtn = document.getElementById('rejectBtn');
+        if (vendor.status === 'pending') {
+          approveBtn.classList.remove('hidden');
+          rejectBtn.classList.remove('hidden');
+        } else {
+          approveBtn.classList.add('hidden');
+          rejectBtn.classList.add('hidden');
+        }
+
+        document.getElementById('viewVendorBody').innerHTML = `
+          <div class="space-y-2">
+            <div><strong>ID:</strong> ${vendor.id}</div>
+            <div><strong>Name:</strong> ${vendor.name}</div>
+            <div><strong>Email:</strong> ${vendor.email}</div>
+            <div><strong>Phone:</strong> ${vendor.phone}</div>
+            <div><strong>Category:</strong> ${vendor.category}</div>
+            <div><strong>Reg Date:</strong> ${new Date(vendor.regDate).toLocaleDateString()}</div>
+            <div><strong>Address:</strong> ${vendor.address || 'N/A'}</div>
+            <div><strong>GST:</strong> ${vendor.gst || 'N/A'}</div>
+            <div><strong>PAN:</strong> ${vendor.pan || 'N/A'}</div>
+            <div class="mt-4"><strong>Documents:</strong> ${docsHTML}</div>
+            <div><strong>Status:</strong> <span class="px-2 py-1 ${
+              vendor.status === 'approved' ? 'bg-green-100 text-green-800' :
+              vendor.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+              'bg-red-100 text-red-800'
+            } rounded-full text-xs">${vendor.status}</span></div>
+            <div class="mt-4">
+              <h4 class="font-semibold mb-2">Performance Metrics</h4>
+              <div class="grid grid-cols-2 gap-4 text-sm">
+                <div><strong>Overall Score:</strong> ${vendor.performance.overallScore}</div>
+                <div><strong>On-Time Delivery:</strong> ${vendor.performance.onTimeDelivery}%</div>
+                <div><strong>Quality Rating:</strong> ${vendor.performance.qualityRating}</div>
+                <div><strong>Tenders Won:</strong> ${vendor.performance.tendersWon}</div>
+                <div><strong>Payment Compliance:</strong> ${vendor.performance.paymentCompliance}%</div>
+                <div><strong>Total Bills:</strong> ${vendor.performance.totalBills}</div>
+                <div><strong>Total Amount:</strong> ₹${vendor.performance.totalAmount.toLocaleString()}</div>
+              </div>
+            </div>
+          </div>
+        `;
+        document.getElementById('viewVendorModal').classList.remove('hidden');
+      }
+    }
+
+    function closeVendorModal() {
+      document.getElementById('vendorModal').classList.add('hidden');
+      document.getElementById('vendorForm').reset();
+      currentVendor = null;
+    }
+
+    function closeViewVendorModal() {
+      document.getElementById('viewVendorModal').classList.add('hidden');
+    }
+
+    function rateVendor() {
+      if (currentVendor) {
+        document.getElementById('vendorToRate').textContent = currentVendor.name;
+        document.getElementById('rateVendorModal').classList.remove('hidden');
+      }
+    }
+
+    let currentRating = 0;
+    function setRating(rating) {
+      currentRating = rating;
+      const stars = document.getElementById('starRating');
+      stars.innerHTML = '★'.repeat(rating) + '☆'.repeat(5 - rating);
+      stars.className = 'rating-stars text-3xl mb-2';
+    }
+
+    function closeRateVendorModal() {
+      document.getElementById('rateVendorModal').classList.add('hidden');
+      currentRating = 0;
+      document.getElementById('starRating').innerHTML = '★★★★☆';
+      document.getElementById('ratingComment').value = '';
+    }
+
+    function submitRating() {
+      if (currentRating === 0) {
+        showToast('Please select a rating.', 'warning');
+        return;
+      }
+      if (currentVendor) {
+        // Simulate rating update
+        currentVendor.performance.qualityRating = ((currentVendor.performance.qualityRating * (currentVendor.performance.totalBills || 1) + currentRating) / ((currentVendor.performance.totalBills || 1) + 1)).toFixed(1);
+        currentVendor.performance.totalBills += 1;
+        populateVendorMetrics();
+        showToast('Rating submitted successfully!', 'success');
+        closeRateVendorModal();
+      }
+    }
+
+    function saveVendor(e) {
+      e.preventDefault();
+      if (!currentVendor) {
+        // Add new
+        const newId = `#V${String(vendorDB.length + 1).padStart(3, '0')}`;
+        const newVendor = {
+          id: newId,
+          name: document.getElementById('vendorName').value,
+          email: document.getElementById('vendorEmail').value,
+          phone: document.getElementById('vendorPhone').value,
+          category: document.getElementById('vendorCategory').value,
+          regDate: new Date().toISOString().split('T')[0],
+          address: document.getElementById('vendorAddress').value,
+          gst: document.getElementById('gstNumber').value,
+          pan: document.getElementById('panNumber').value,
+          status: 'pending',
+          docs: Array.from(document.getElementById('vendorDocuments').files).map(f => f.name),
+          performance: {
+            overallScore: 0,
+            onTimeDelivery: 0,
+            qualityRating: 0,
+            tendersWon: 0,
+            paymentCompliance: 0,
+            totalBills: 0,
+            totalAmount: 0
+          }
+        };
+        vendorDB.push(newVendor);
+        showToast('Vendor added successfully! Awaiting approval.', 'success');
+      } else {
+        // Edit existing
+        currentVendor.name = document.getElementById('vendorName').value;
+        currentVendor.email = document.getElementById('vendorEmail').value;
+        currentVendor.phone = document.getElementById('vendorPhone').value;
+        currentVendor.category = document.getElementById('vendorCategory').value;
+        currentVendor.address = document.getElementById('vendorAddress').value;
+        currentVendor.gst = document.getElementById('gstNumber').value;
+        currentVendor.pan = document.getElementById('panNumber').value;
+        currentVendor.docs = [...currentVendor.docs, ...Array.from(document.getElementById('vendorDocuments').files).map(f => f.name)];
+        showToast('Vendor updated successfully!', 'success');
+      }
+      filterVendors(); // Refresh table
+      populateVendorMetrics(); // Refresh metrics
+      closeVendorModal();
+    }
+
+    function approveVendor() {
+      if (currentVendor) {
+        currentVendor.status = 'approved';
+        filterVendors();
+        populateVendorMetrics();
+        showToast('Vendor approved!', 'success');
+        closeViewVendorModal();
+      }
+    }
+
+    function rejectVendor() {
+      if (currentVendor) {
+        currentVendor.status = 'rejected';
+        filterVendors();
+        populateVendorMetrics();
+        showToast('Vendor rejected!', 'danger');
+        closeViewVendorModal();
+      }
+    }
+
+    function deleteVendor(id) {
+      if (confirm('Delete this vendor? This action cannot be undone.')) {
+        vendorDB = vendorDB.filter(v => v.id !== id);
+        filterVendors();
+        populateVendorMetrics();
+        showToast('Vendor deleted!', 'warning');
+      }
+    }
+
+    // -------------------------------------------------
+    // 7. Demo
+    // -------------------------------------------------
+    document.getElementById('notifyBtn').addEventListener('click', () => showToast('2 new vendor registrations.', 'info'));
+
+    // Initialize on load
+    initVendorPage();
+  </script>
+</body>
+</html>

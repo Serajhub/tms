@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IFMIS - DDO Admin</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            primary: '#1E40AF',
+            gradientStart: '#3B82F6',
+            gradientEnd: '#8B5CF6',
+            urgent: '#FECACA',
+            info: '#DBEAFE',
+            warning: '#FEF3C7',
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    .header-gradient {
+      background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+    }
+    .sidebar {
+      transition: all 0.3s ease;
+      width: 64px; /* collapsed */
+    }
+    .sidebar.expanded {
+      width: 256px; /* expanded */
+    }
+    .sidebar-link {
+      transition: all 0.2s ease;
+    }
+    .sidebar-link:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      padding-left: 1.25rem;
+    }
+    .sidebar-link.active {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      font-weight: 600;
+      border-left: 4px solid #10B981;
+      padding-left: 1.25rem;
+    }
+    .sidebar-text {
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .sidebar.expanded .sidebar-text {
+      opacity: 1;
+    }
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+    .toast {
+      transition: all 0.3s ease;
+      transform: translateX(120%);
+      opacity: 0;
+    }
+    .toast.show {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen">
+
+  <!-- ==================== HEADER (Attached to Sidebar) ==================== -->
+  <header class="header-gradient text-white shadow-lg sticky top-0 z-50">
+    <div class="px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+      <!-- Left: Burger + Logo -->
+      <div class="flex items-center space-x-3">
+        <!-- Burger Button -->
+        <button id="burgerBtn" class="p-2 rounded-md hover:bg-white/10 transition">
+          <i class="fas fa-bars text-xl"></i>
+        </button>
+
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 bg-white rounded flex items-center justify-center">
+            <span class="text-primary font-bold text-sm">IF</span>
+          </div>
+          <div>
+            <h1 class="text-lg font-bold">IFMIS</h1>
+            <p class="text-xs opacity-90">District Development Officer</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Notifications + Theme -->
+      <div class="flex items-center space-x-3">
+        <button id="notifyBtn" class="relative p-2 rounded-full hover:bg-white/10 transition">
+          <i class="fas fa-bell text-lg"></i>
+          <span class="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
+        </button>
+        <button id="themeToggle" class="p-2 rounded-full hover:bg-white/10 transition">
+          <i class="fas fa-moon text-lg"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== LAYOUT (Sidebar + Main) ==================== -->
+  <div class="flex">
+
+    <!-- ==================== SIDEBAR (Collapsible) ==================== -->
+    <aside id="sidebar" class="sidebar fixed lg:static inset-y-0 left-0 bg-primary text-white z-40 overflow-hidden">
+      <nav class="mt-20 lg:mt-6 px-3 space-y-1">
+        <a href="#" class="sidebar-link flex items-center space-x-3 py-3 rounded-lg active">
+          <i class="fas fa-tachometer-alt w-5"></i>
+          <span class="sidebar-text whitespace-nowrap">Dashboard</span>
+        </a>
+        <a href="vendorman.html" class="sidebar-link flex items-center space-x-3 py-3 rounded-lg tab-link" data-tab="vendor">
+          <i class="fas fa-users w-5"></i>
+          <span class="sidebar-text whitespace-nowrap">Vendor Management</span>
+        </a>
+        <a href="#" class="sidebar-link flex items-center space-x-3 py-3 rounded-lg tab-link" data-tab="tender">
+          <i class="fas fa-file-contract w-5"></i>
+          <span class="sidebar-text whitespace-nowrap">Tender Management</span>
+        </a>
+        <a href="#" class="sidebar-link flex items-center space-x-3 py-3 rounded-lg tab-link" data-tab="bill">
+          <i class="fas fa-file-invoice-dollar w-5"></i>
+          <span class="sidebar-text whitespace-nowrap">Bill Verification</span>
+        </a>
+        <a href="#" class="sidebar-link flex items-center space-x-3 py-3 rounded-lg tab-link" data-tab="tracking">
+          <i class="fas fa-tasks w-5"></i>
+          <span class="sidebar-text whitespace-nowrap">Tender Progress Tracking</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- ==================== MAIN CONTENT ==================== -->
+    <main class="flex-1 p-6 lg:p-8 max-w-7xl mx-auto w-full">
+      <div class="mb-8">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white">
+          Welcome back, Admin!
+        </h2>
+        <p class="text-gray-600 dark:text-gray-400">Manage vendors, tenders, and payments efficiently with IFMIS</p>
+      </div>
+
+      <!-- ==================== STAT CARDS ==================== -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 stat-card">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Total Vendors</p>
+              <p class="text-2xl font-bold text-primary">450</p>
+            </div>
+            <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+              <i class="fas fa-users text-primary"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 stat-card">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Pending Approvals</p>
+              <p class="text-2xl font-bold text-orange-600">25</p>
+            </div>
+            <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center">
+              <i class="fas fa-clock text-orange-600"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 stat-card">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Approved Tenders</p>
+              <p class="text-2xl font-bold text-green-600">1,230</p>
+            </div>
+            <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+              <i class="fas fa-check-circle text-green-600"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 stat-card">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Payments Made</p>
+              <p class="text-2xl font-bold text-purple-600">₹12,50,000</p>
+            </div>
+            <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+              <i class="fas fa-rupee-sign text-purple-600"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== ALERT BANNERS ==================== -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div class="bg-urgent/20 border border-red-300 text-red-700 p-4 rounded-xl flex items-center space-x-3">
+          <i class="fas fa-exclamation-circle"></i>
+          <div>
+            <p class="font-medium">Urgent: Approvals Pending</p>
+            <p class="text-sm">7 vendor approvals pending for more than 5 days</p>
+          </div>
+        </div>
+        <div class="bg-info/20 border border-blue-300 text-blue-700 p-4 rounded-xl flex items-center space-x-3">
+          <i class="fas fa-info-circle"></i>
+          <div>
+            <p class="font-medium">Tender Applications</p>
+            <p class="text-sm">5 new tenders to evaluate/review today</p>
+          </div>
+        </div>
+        <div class="bg-warning/20 border border-amber-300 text-amber-700 p-4 rounded-xl flex items-center space-x-3">
+          <i class="fas fa-bell"></i>
+          <div>
+            <p class="font-medium">Payment Reminder</p>
+            <p class="text-sm">3 bills due for payment on 15th February</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== QUICK ACTIONS ==================== -->
+      <div class="flex flex-wrap gap-3 mb-8">
+        <button class="px-4 py-2 bg-primary text-white rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition">
+          <i class="fas fa-user-plus"></i>
+          <span>Add New Vendor</span>
+        </button>
+        <button class="px-4 py-2 bg-green-600 text-white rounded-lg flex items-center space-x-2 hover:bg-green-700 transition">
+          <i class="fas fa-file-alt"></i>
+          <span>Create Tender</span>
+        </button>
+        <button class="px-4 py-2 bg-amber-600 text-white rounded-lg flex items-center space-x-2 hover:bg-amber-700 transition">
+          <i class="fas fa-file-invoice"></i>
+          <span>Verify Bill</span>
+        </button>
+      </div>
+
+      <!-- ==================== TABBED CONTENT ==================== -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div class="flex space-x-8 border-b border-gray-200 dark:border-gray-700 mb-6 overflow-x-auto">
+          <button class="tab-btn active pb-2 border-b-2 border-primary text-primary font-medium" data-tab="vendor">Vendor Registration</button>
+          <button class="tab-btn pb-2 text-gray-600 dark:text-gray-400" data-tab="tender">Tender Management</button>
+          <button class="tab-btn pb-2 text-gray-600 dark:text-gray-400" data-tab="bill">Bill Verification</button>
+          <button class="tab-btn pb-2 text-gray-600 dark:text-gray-400" data-tab="tracking">Tracking</button>
+        </div>
+
+        <!-- Vendor Table -->
+        <div id="vendor" class="tab-content">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left border-b dark:border-gray-700">
+                  <th class="py-3 px-4">VENDOR ID</th>
+                  <th class="py-3 px-4">VENDOR NAME</th>
+                  <th class="py-3 px-4">CATEGORY</th>
+                  <th class="py-3 px-4">REGISTRATION DATE</th>
+                  <th class="py-3 px-4">STATUS</th>
+                  <th class="py-3 px-4">ACTION</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-b dark:border-gray-700">
+                  <td class="py-3 px-4">#V001</td>
+                  <td class="py-3 px-4">ABC Supplies Ltd.</td>
+                  <td class="py-3 px-4">Electronics</td>
+                  <td class="py-3 px-4">13 Jan 2025</td>
+                  <td class="py-3 px-4"><span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Approved</span></td>
+                  <td class="py-3 px-4"><a href="#" class="text-primary hover:underline">View</a></td>
+                </tr>
+                <tr class="border-b dark:border-gray-700">
+                  <td class="py-3 px-4">#V002</td>
+                  <td class="py-3 px-4">XYZ Trading Co.</td>
+                  <td class="py-3 px-4">Stationery</td>
+                  <td class="py-3 px-4">18 Jan 2025</td>
+                  <td class="py-3 px-4"><span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">Pending</span></td>
+                  <td class="py-3 px-4"><a href="#" class="text-primary hover:underline">Review</a></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+           <!-- ==================== VENDOR DETAIL MODAL ==================== -->
+<div id="vendorModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full p-6">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-lg font-bold">Vendor Profile Details</h3>
+      <button onclick="closeVendorModal()" class="text-gray-500 hover:text-gray-700">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div id="modalBody" class="space-y-4">
+      <!-- Filled by JS -->
+    </div>
+
+    <div class="flex justify-end space-x-3 mt-6">
+      <button onclick="closeVendorModal()" class="px-4 py-2 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+        Close
+      </button>
+      <button id="modalApproveBtn" onclick="approveVendorFromModal()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+        Approve
+      </button>
+      <button id="modalRejectBtn" onclick="rejectVendorFromModal()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+        Reject
+      </button>
+    </div>
+  </div>
+</div>
+        <!-- Placeholder Tabs -->
+        <div id="tender" class="tab-content hidden">
+          <p class="text-gray-500 text-center py-8">Tender Management content goes here.</p>
+        </div>
+        <div id="bill" class="tab-content hidden">
+          <p class="text-gray-500 text-center py-8">Bill Verification content goes here.</p>
+        </div>
+        <div id="tracking" class="tab-content hidden">
+          <p class="text-gray-500 text-center py-8">Tracking content goes here.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ==================== TOAST CONTAINER ==================== -->
+  <div id="toastContainer" class="fixed right-4 top-20 space-y-3 z-50"></div>
+
+  <!-- ==================== JS ==================== -->
+  <script>
+  // -------------------------------------------------
+  // 1. Sidebar / Theme / Toast (unchanged)
+  // -------------------------------------------------
+  const burgerBtn = document.getElementById('burgerBtn');
+  const sidebar = document.getElementById('sidebar');
+  burgerBtn.addEventListener('click', () => {
+    sidebar.classList.toggle('expanded');
+    burgerBtn.innerHTML = sidebar.classList.contains('expanded')
+      ? '<i class="fas fa-times text-xl"></i>'
+      : '<i class="fas fa-bars text-xl"></i>';
+  });
+
+  const themeToggle = document.getElementById('themeToggle');
+  const html = document.documentElement;
+  themeToggle.addEventListener('click', () => {
+    if (html.classList.contains('dark')) {
+      html.classList.remove('dark');
+      themeToggle.innerHTML = '<i class="fas fa-moon text-lg"></i>';
+      localStorage.setItem('theme', 'light');
+    } else {
+      html.classList.add('dark');
+      themeToggle.innerHTML = '<i class="fas fa-sun text-lg"></i>';
+      localStorage.setItem('theme', 'dark');
+    }
+  });
+  if (localStorage.getItem('theme') === 'dark' ||
+      (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    html.classList.add('dark');
+    themeToggle.innerHTML = '<i class="fas fa-sun text-lg"></i>';
+  }
+
+  document.querySelectorAll('.sidebar-link').forEach(link => {
+    link.addEventListener('click', function () {
+      document.querySelectorAll('.sidebar-link').forEach(a => a.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+
+  document.querySelectorAll('.tab-link, .tab-btn').forEach(btn => {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      const tab = this.getAttribute('data-tab');
+      document.querySelectorAll('.sidebar-link').forEach(a => a.classList.remove('active'));
+      document.querySelector(`.sidebar-link[data-tab="${tab}"]`)?.classList.add('active');
+
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('active', 'text-primary', 'border-primary');
+        b.classList.add('text-gray-600', 'dark:text-gray-400');
+      });
+      document.querySelector(`.tab-btn[data-tab="${tab}"]`)?.classList.add('active', 'text-primary', 'border-primary');
+      document.querySelector(`.tab-btn[data-tab="${tab}"]`)?.classList.remove('text-gray-600', 'dark:text-gray-400');
+
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+      document.getElementById(tab).classList.remove('hidden');
+    });
+  });
+
+  function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast p-4 rounded-xl shadow-xl text-white flex items-center space-x-3 min-w-80 backdrop-blur-sm border border-white/20 ${
+      type === 'success' ? 'bg-green-600' :
+      type === 'warning' ? 'bg-amber-600' :
+      type === 'danger' ? 'bg-red-600' : 'bg-primary'
+    }`;
+    toast.innerHTML = `
+      <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
+      <div class="flex-1"><p class="font-medium">${message}</p></div>
+      <button class="text-white/70 hover:text-white" onclick="this.parentElement.remove()">X</button>
+    `;
+    document.getElementById('toastContainer').appendChild(toast);
+    setTimeout(() => toast.classList.add('show'), 100);
+    setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 4000);
+  }
+
+  // -------------------------------------------------
+  // 2. Vendor Data (you can extend this array)
+  // -------------------------------------------------
+  const vendorDB = {
+    '#V001': {
+      id: '#V001', name: 'ABC Supplies Ltd.', email: 'abc@supplies.com',
+      phone: '+91 98765 43210', category: 'Electronics', regDate: '13 Jan 2025',
+      status: 'approved',
+      docs: [
+        { name: 'GST Certificate', file: 'gst_abc.pdf' },
+        { name: 'PAN Card', file: 'pan_abc.jpg' },
+        { name: 'Bank Proof', file: 'bank_abc.pdf' }
+      ]
+    },
+    '#V002': {
+      id: '#V002', name: 'XYZ Trading Co.', email: 'xyz@trade.in',
+      phone: '+91 91234 56789', category: 'Stationery', regDate: '18 Jan 2025',
+      status: 'pending',
+      docs: [
+        { name: 'GST Certificate', file: 'gst_xyz.pdf' },
+        { name: 'PAN Card', file: 'pan_xyz.jpg' },
+        { name: 'Bank Proof', file: 'bank_xyz.pdf' }
+      ]
+    }
+    // add more vendors here …
+  };
+
+  // -------------------------------------------------
+  // 3. Open Modal from "View / Review" link
+  // -------------------------------------------------
+  let currentVendorRow = null;   // keep reference to the table row
+
+  function openVendorModal(btn) {
+    const id = btn.closest('tr').querySelector('td').textContent; // first <td> = ID
+    const v = vendorDB[id];
+    if (!v) return;
+
+    currentVendorRow = btn.closest('tr');
+
+    // ---- Build modal body ----
+    const docsHTML = v.docs.map(d => `
+      <div class="border p-3 rounded flex justify-between items-center">
+        <span><strong>${d.name}:</strong></span>
+        <a href="#" class="text-primary hover:underline text-sm">Download ${d.file}</a>
+      </div>
+    `).join('');
+
+    const remarksHTML = v.status === 'pending'
+      ? `<div class="mt-4">
+           <label class="block font-medium mb-1">Remarks (optional for rejection)</label>
+           <textarea id="rejectRemarks" class="w-full p-2 border rounded-lg" rows="3"
+                     placeholder="Enter reason for rejection..."></textarea>
+         </div>`
+      : '';
+
+    document.getElementById('modalBody').innerHTML = `
+      <div><strong>Vendor ID:</strong> ${v.id}</div>
+      <div><strong>Name:</strong> ${v.name}</div>
+      <div><strong>Email:</strong> ${v.email}</div>
+      <div><strong>Contact No:</strong> ${v.phone}</div>
+      <div><strong>Registration Date:</strong> ${v.regDate}</div>
+      <div class="mt-4 space-y-2">${docsHTML}</div>
+      ${remarksHTML}
+    `;
+
+    // Show / hide Approve & Reject buttons
+    const approveBtn = document.getElementById('modalApproveBtn');
+    const rejectBtn  = document.getElementById('modalRejectBtn');
+    if (v.status === 'pending') {
+      approveBtn.classList.remove('hidden');
+      rejectBtn.classList.remove('hidden');
+    } else {
+      approveBtn.classList.add('hidden');
+      rejectBtn.classList.add('hidden');
+    }
+
+    document.getElementById('vendorModal').classList.remove('hidden');
+  }
+
+  // -------------------------------------------------
+  // 4. Close Modal
+  // -------------------------------------------------
+  function closeVendorModal() {
+    document.getElementById('vendorModal').classList.add('hidden');
+    currentVendorRow = null;
+  }
+
+  // -------------------------------------------------
+  // 5. Approve / Reject from Modal
+  // -------------------------------------------------
+  function approveVendorFromModal() {
+    if (!currentVendorRow) return;
+    updateVendorStatus(currentVendorRow, 'approved', 'Approved', 'bg-green-100 text-green-800');
+    showToast('Vendor Approved Successfully!', 'success');
+    closeVendorModal();
+  }
+
+  function rejectVendorFromModal() {
+    if (!currentVendorRow) return;
+    const remarks = document.getElementById('rejectRemarks')?.value.trim();
+    updateVendorStatus(currentVendorRow, 'rejected', 'Rejected', 'bg-red-100 text-red-800');
+    showToast(remarks ? `Vendor Rejected. Reason: ${remarks}` : 'Vendor Rejected.', 'danger');
+    closeVendorModal();
+  }
+
+  // -------------------------------------------------
+  // 6. Helper – update table row & in-memory data
+  // -------------------------------------------------
+  function updateVendorStatus(row, status, label, badge) {
+    const id = row.cells[0].textContent;
+    vendorDB[id].status = status;
+
+    // status cell
+    row.cells[4].innerHTML = `<span class="px-2 py-1 ${badge} rounded-full text-xs">${label}</span>`;
+
+    // action cell – keep "View" link
+    row.cells[5].innerHTML = `<a href="javascript:void(0)" onclick="openVendorModal(this)" class="text-primary hover:underline">View</a>`;
+  }
+
+  // -------------------------------------------------
+  // 7. Attach click handlers to existing "View/Review" links
+  // -------------------------------------------------
+  document.querySelectorAll('#vendor tbody a').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      openVendorModal(link);
+    });
+  });
+
+  // -------------------------------------------------
+  // 8. Demo toasts
+  // -------------------------------------------------
+  setTimeout(() => showToast('Vendor registration approved!', 'success'), 2000);
+  document.getElementById('notifyBtn').addEventListener('click', () => showToast('3 pending tasks.', 'warning'));
+</script>
+</body>
+</html>

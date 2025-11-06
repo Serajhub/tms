@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IFMIS - Bill Verification</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            primary: '#1E40AF',
+            gradientStart: '#3B82F6',
+            gradientEnd: '#8B5CF6',
+            urgent: '#FECACA',
+            info: '#DBEAFE',
+            warning: '#FEF3C7',
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    .header-gradient {
+      background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+    }
+    .sidebar {
+      transition: all 0.3s ease;
+      width: 64px; /* collapsed */
+    }
+    .sidebar.expanded {
+      width: 256px; /* expanded */
+    }
+    .sidebar-link {
+      transition: all 0.2s ease;
+    }
+    .sidebar-link:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      padding-left: 1.25rem;
+    }
+    .sidebar-link.active {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      font-weight: 600;
+      border-left: 4px solid #10B981;
+      padding-left: 1.25rem;
+    }
+    .sidebar-text {
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .sidebar.expanded .sidebar-text {
+      opacity: 1;
+    }
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+    .toast {
+      transition: all 0.3s ease;
+      transform: translateX(120%);
+      opacity: 0;
+    }
+    .toast.show {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen">
+
+  <!-- ==================== HEADER ==================== -->
+  <header class="header-gradient text-white shadow-lg sticky top-0 z-50">
+    <div class="px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+      <!-- Left: Burger + Logo -->
+      <div class="flex items-center space-x-3">
+        <!-- Burger Button -->
+        <button id="burgerBtn" class="p-2 rounded-md hover:bg-white/10 transition">
+          <i class="fas fa-bars text-xl"></i>
+        </button>
+
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 bg-white rounded flex items-center justify-center">
+            <span class="text-primary font-bold text-sm">IF</span>
+          </div>
+          <div>
+            <h1 class="text-lg font-bold">IFMIS</h1>
+            <p class="text-xs opacity-90">Bill Verification</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Notifications + Theme -->
+      <div class="flex items-center space-x-3">
+        <button id="notifyBtn" class="relative p-2 rounded-full hover:bg-white/10 transition">
+          <i class="fas fa-bell text-lg"></i>
+          <span class="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
+        </button>
+        <button id="themeToggle" class="p-2 rounded-full hover:bg-white/10 transition">
+          <i class="fas fa-moon text-lg"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== LAYOUT (Sidebar + Main) ==================== -->
+  <div class="flex">
+
+    <!-- ==================== SIDEBAR ==================== -->
+    <aside id="sidebar" class="sidebar fixed lg:static inset-y-0 left-0 bg-primary text-white z-40 overflow-hidden">
+      <nav class="mt-20 lg:mt-6 px-3 space-y-1">
+        <a href="dashboard.html" class="sidebar-link flex items-center space-x-3 py-3 rounded-lg">
+          <i class="fas fa-tachometer-alt w-5"></i>
+          <span class="sidebar-text whitespace-nowrap">Dashboard</span>
+        </a>
+        <a href="vendorman.html" class="sidebar-link flex items-center space-x-3 py-3 rounded-lg">
+          <i class="fas fa-users w-5"></i>
+          <span class="sidebar-text whitespace-nowrap">Vendor Management</span>
+        </a>
+        <a href="tenderman.html" class="sidebar-link flex items-center space-x-3 py-3 rounded-lg">
+          <i class="fas fa-file-contract w-5"></i>
+          <span class="sidebar-text whitespace-nowrap">Tender Management</span>
+        </a>
+        <a href="#" class="sidebar-link flex items-center space-x-3 py-3 rounded-lg active">
+          <i class="fas fa-file-invoice-dollar w-5"></i>
+          <span class="sidebar-text whitespace-nowrap">Bill Verification</span>
+        </a>
+        <a href="dashboard.html#tracking" class="sidebar-link flex items-center space-x-3 py-3 rounded-lg">
+          <i class="fas fa-tasks w-5"></i>
+          <span class="sidebar-text whitespace-nowrap">Tender Progress Tracking</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- ==================== MAIN CONTENT ==================== -->
+    <main class="flex-1 p-6 lg:p-8 max-w-7xl mx-auto w-full">
+      <div class="mb-8">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white">
+          Bill Verification
+        </h2>
+        <p class="text-gray-600 dark:text-gray-400">Review and approve vendor bills for payment</p>
+      </div>
+
+      <!-- ==================== TABS ==================== -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
+        <div class="flex space-x-8 border-b border-gray-200 dark:border-gray-700">
+          <button class="tab-btn active pb-2 border-b-2 border-primary text-primary font-medium" data-tab="verification">Bill Verification</button>
+          <button class="tab-btn pb-2 text-gray-600 dark:text-gray-400" data-tab="payments">Payment History</button>
+        </div>
+
+        <!-- ==================== BILL VERIFICATION TAB ==================== -->
+        <div id="verification" class="tab-content p-6">
+          <!-- ==================== SEARCH & FILTER ==================== -->
+          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+            <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+              <div class="flex-1 md:w-1/3">
+                <input type="text" id="searchInput" placeholder="Search bills..." class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600">
+              </div>
+              <div class="flex gap-2">
+                <select id="statusFilter" class="p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600">
+                  <option value="">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+                <button onclick="openAddBillModal()" class="px-4 py-3 bg-primary text-white rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition">
+                  <i class="fas fa-plus"></i>
+                  <span>Add New Bill</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ==================== BILLS TABLE ==================== -->
+          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                  <tr class="text-left border-b dark:border-gray-700">
+                    <th class="py-3 px-4 font-semibold">BILL ID</th>
+                    <th class="py-3 px-4 font-semibold">VENDOR</th>
+                    <th class="py-3 px-4 font-semibold">AMOUNT (₹)</th>
+                    <th class="py-3 px-4 font-semibold">INVOICE DATE</th>
+                    <th class="py-3 px-4 font-semibold">DUE DATE</th>
+                    <th class="py-3 px-4 font-semibold">STATUS</th>
+                    <th class="py-3 px-4 font-semibold">ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody id="billTableBody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ==================== PAGINATION ==================== -->
+          <div class="flex justify-between items-center mt-6">
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+              Showing <span id="showingCount">1</span> to <span id="totalCount">10</span> of <span id="totalBills">10</span> bills
+            </div>
+            <div class="flex space-x-2">
+              <button class="px-3 py-2 border rounded-lg disabled:opacity-50" id="prevPage">Previous</button>
+              <span id="pageInfo" class="px-3 py-2">Page 1</span>
+              <button class="px-3 py-2 border rounded-lg disabled:opacity-50" id="nextPage">Next</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== PAYMENT HISTORY TAB ==================== -->
+        <div id="payments" class="tab-content hidden p-6">
+          <!-- ==================== SEARCH & FILTER ==================== -->
+          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+            <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+              <div class="flex-1 md:w-1/3">
+                <input type="text" id="paymentSearchInput" placeholder="Search payments..." class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600">
+              </div>
+              <div class="flex gap-2">
+                <select id="paymentStatusFilter" class="p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600">
+                  <option value="">All Payments</option>
+                  <option value="paid">Paid</option>
+                </select>
+                <button onclick="exportPayments()" class="px-4 py-3 bg-green-600 text-white rounded-lg flex items-center space-x-2 hover:bg-green-700 transition">
+                  <i class="fas fa-download"></i>
+                  <span>Export Payments</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ==================== PAYMENT HISTORY TABLE ==================== -->
+          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                  <tr class="text-left border-b dark:border-gray-700">
+                    <th class="py-3 px-4 font-semibold">PAYMENT ID</th>
+                    <th class="py-3 px-4 font-semibold">BILL ID</th>
+                    <th class="py-3 px-4 font-semibold">VENDOR</th>
+                    <th class="py-3 px-4 font-semibold">AMOUNT (₹)</th>
+                    <th class="py-3 px-4 font-semibold">PAYMENT DATE</th>
+                    <th class="py-3 px-4 font-semibold">METHOD</th>
+                    <th class="py-3 px-4 font-semibold">TRANSACTION ID</th>
+                    <th class="py-3 px-4 font-semibold">ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody id="paymentTableBody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ==================== PAYMENT PAGINATION ==================== -->
+          <div class="flex justify-between items-center mt-6">
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+              Showing <span id="paymentShowingCount">1</span> to <span id="paymentTotalCount">10</span> of <span id="totalPayments">10</span> payments
+            </div>
+            <div class="flex space-x-2">
+              <button class="px-3 py-2 border rounded-lg disabled:opacity-50" id="paymentPrevPage">Previous</button>
+              <span id="paymentPageInfo" class="px-3 py-2">Page 1</span>
+              <button class="px-3 py-2 border rounded-lg disabled:opacity-50" id="paymentNextPage">Next</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ==================== ADD/EDIT BILL MODAL ==================== -->
+  <div id="billModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 id="billModalTitle" class="text-lg font-bold">Add New Bill</h3>
+        <button onclick="closeBillModal()" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <form id="billForm">
+        <div class="space-y-4">
+          <div>
+            <label for="vendorSelect" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Vendor <span class="text-red-500">*</span></label>
+            <select id="vendorSelect" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600" required>
+              <option value="">Select vendor</option>
+              <!-- Populated by JS -->
+            </select>
+          </div>
+          <div>
+            <label for="billAmount" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount (₹) <span class="text-red-500">*</span></label>
+            <input type="number" id="billAmount" step="0.01" min="0" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600" required />
+          </div>
+          <div>
+            <label for="invoiceDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Invoice Date <span class="text-red-500">*</span></label>
+            <input type="date" id="invoiceDate" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600" required />
+          </div>
+          <div>
+            <label for="dueDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Due Date <span class="text-red-500">*</span></label>
+            <input type="date" id="dueDate" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600" required />
+          </div>
+          <div>
+            <label for="billDescription" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+            <textarea id="billDescription" rows="3" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600"></textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Upload Invoice</label>
+            <input type="file" id="billInvoice" accept=".pdf,.jpg,.png" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600">
+          </div>
+          <div class="flex justify-end space-x-3 mt-6">
+            <button type="button" onclick="closeBillModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition">Cancel</button>
+            <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition">Save Bill</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== RECORD PAYMENT MODAL ==================== -->
+  <div id="paymentModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold">Record Payment</h3>
+        <button onclick="closePaymentModal()" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <form id="paymentForm">
+        <div class="space-y-4">
+          <div>
+            <label for="paymentMethod" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payment Method</label>
+            <select id="paymentMethod" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600" required>
+              <option value="">Select method</option>
+              <option value="NEFT">NEFT</option>
+              <option value="RTGS">RTGS</option>
+              <option value="Cheque">Cheque</option>
+              <option value="UPI">UPI</option>
+            </select>
+          </div>
+          <div>
+            <label for="transactionId" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Transaction ID <span class="text-red-500">*</span></label>
+            <input type="text" id="transactionId" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600" required />
+          </div>
+          <div>
+            <label for="paymentDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payment Date <span class="text-red-500">*</span></label>
+            <input type="date" id="paymentDate" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600" required />
+          </div>
+          <div class="flex justify-end space-x-3 mt-6">
+            <button type="button" onclick="closePaymentModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition">Cancel</button>
+            <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">Record Payment</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== VIEW BILL MODAL ==================== -->
+  <div id="viewBillModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold">Bill Details</h3>
+        <button onclick="closeViewBillModal()" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div id="viewBillBody" class="space-y-4">
+        <!-- Filled by JS -->
+      </div>
+      <div class="flex justify-end space-x-3 mt-6">
+        <button onclick="closeViewBillModal()" class="px-4 py-2 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">Close</button>
+        <button id="approveBillBtn" onclick="approveBill()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 hidden">Approve</button>
+        <button id="rejectBillBtn" onclick="rejectBill()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 hidden">Reject</button>
+        <button id="recordPaymentBtn" onclick="openPaymentModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 hidden">Record Payment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TOAST CONTAINER ==================== -->
+  <div id="toastContainer" class="fixed right-4 top-20 space-y-3 z-50"></div>
+
+  <!-- ==================== JS ==================== -->
+  <script>
+    // -------------------------------------------------
+    // 1. Sidebar / Theme / Toast
+    // -------------------------------------------------
+    const burgerBtn = document.getElementById('burgerBtn');
+    const sidebar = document.getElementById('sidebar');
+    burgerBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('expanded');
+      burgerBtn.innerHTML = sidebar.classList.contains('expanded')
+        ? '<i class="fas fa-times text-xl"></i>'
+        : '<i class="fas fa-bars text-xl"></i>';
+    });
+
+    const themeToggle = document.getElementById('themeToggle');
+    const html = document.documentElement;
+    themeToggle.addEventListener('click', () => {
+      if (html.classList.contains('dark')) {
+        html.classList.remove('dark');
+        themeToggle.innerHTML = '<i class="fas fa-moon text-lg"></i>';
+        localStorage.setItem('theme', 'light');
+      } else {
+        html.classList.add('dark');
+        themeToggle.innerHTML = '<i class="fas fa-sun text-lg"></i>';
+        localStorage.setItem('theme', 'dark');
+      }
+    });
+    if (localStorage.getItem('theme') === 'dark' ||
+        (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      html.classList.add('dark');
+      themeToggle.innerHTML = '<i class="fas fa-sun text-lg"></i>';
+    }
+
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = `toast p-4 rounded-xl shadow-xl text-white flex items-center space-x-3 min-w-80 backdrop-blur-sm border border-white/20 ${
+        type === 'success' ? 'bg-green-600' :
+        type === 'warning' ? 'bg-amber-600' :
+        type === 'danger' ? 'bg-red-600' : 'bg-primary'
+      }`;
+      toast.innerHTML = `
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'warning' ? 'fa-exclamation-triangle' : type === 'danger' ? 'fa-times-circle' : 'fa-info-circle'}"></i>
+        <div class="flex-1"><p class="font-medium">${message}</p></div>
+        <button class="text-white/70 hover:text-white" onclick="this.parentElement.remove()">X</button>
+      `;
+      document.getElementById('toastContainer').appendChild(toast);
+      setTimeout(() => toast.classList.add('show'), 100);
+      setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 4000);
+    }
+
+    // -------------------------------------------------
+    // 2. Vendor Data (for bill association)
+    // -------------------------------------------------
+    const vendorDB = [
+      { id: '#V001', name: 'ABC Supplies Ltd.', category: 'Electronics', status: 'approved' },
+      { id: '#V002', name: 'XYZ Trading Co.', category: 'Stationery', status: 'approved' }
+    ];
+
+    // -------------------------------------------------
+    // 3. Bill Data
+    // -------------------------------------------------
+    let billDB = [
+      {
+        id: 'BILL/2025/001',
+        vendorId: '#V001',
+        vendorName: 'ABC Supplies Ltd.',
+        amount: '15000',
+        invoiceDate: '2025-10-15',
+        dueDate: '2025-11-15',
+        description: 'Payment for electronics supplies',
+        status: 'approved',
+        invoiceFile: 'invoice_001.pdf',
+        payment: {
+          date: '2025-11-05',
+          method: 'NEFT',
+          transactionId: 'TXN001234',
+          paid: true
+        }
+      },
+      {
+        id: 'BILL/2025/002',
+        vendorId: '#V002',
+        vendorName: 'XYZ Trading Co.',
+        amount: '8000',
+        invoiceDate: '2025-10-20',
+        dueDate: '2025-11-10',
+        description: 'Payment for stationery items',
+        status: 'approved',
+        invoiceFile: 'invoice_002.pdf',
+        payment: null
+      },
+      {
+        id: 'BILL/2025/003',
+        vendorId: '#V001',
+        vendorName: 'ABC Supplies Ltd.',
+        amount: '25000',
+        invoiceDate: '2025-10-25',
+        dueDate: '2025-11-20',
+        description: 'Payment for additional components',
+        status: 'rejected',
+        invoiceFile: 'invoice_003.pdf',
+        payment: null
+      }
+    ];
+
+    let currentPage = 1;
+    let paymentCurrentPage = 1;
+    const itemsPerPage = 10;
+    let currentBill = null;
+
+    // -------------------------------------------------
+    // 4. Initialize
+    // -------------------------------------------------
+    function initBillPage() {
+      populateBillTable();
+      populatePaymentTable();
+      populateVendorSelect();
+      setupEventListeners();
+      updatePagination();
+      updatePaymentPagination();
+    }
+
+    function setupEventListeners() {
+      // Tab switching
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          const tab = this.getAttribute('data-tab');
+          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active', 'border-primary', 'text-primary'));
+          this.classList.add('active', 'border-primary', 'text-primary');
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+          document.getElementById(tab).classList.remove('hidden');
+        });
+      });
+
+      document.getElementById('searchInput').addEventListener('input', filterBills);
+      document.getElementById('statusFilter').addEventListener('change', filterBills);
+      document.getElementById('prevPage').addEventListener('click', () => {
+        if (currentPage > 1) {
+          currentPage--;
+          populateBillTable();
+          updatePagination();
+        }
+      });
+      document.getElementById('nextPage').addEventListener('click', () => {
+        if (currentPage < getTotalPages()) {
+          currentPage++;
+          populateBillTable();
+          updatePagination();
+        }
+      });
+      document.getElementById('billForm').addEventListener('submit', saveBill);
+
+      // Payment tab listeners
+      document.getElementById('paymentSearchInput').addEventListener('input', filterPayments);
+      document.getElementById('paymentStatusFilter').addEventListener('change', filterPayments);
+      document.getElementById('paymentPrevPage').addEventListener('click', () => {
+        if (paymentCurrentPage > 1) {
+          paymentCurrentPage--;
+          populatePaymentTable();
+          updatePaymentPagination();
+        }
+      });
+      document.getElementById('paymentNextPage').addEventListener('click', () => {
+        if (paymentCurrentPage < getPaymentTotalPages()) {
+          paymentCurrentPage++;
+          populatePaymentTable();
+          updatePaymentPagination();
+        }
+      });
+      document.getElementById('paymentForm').addEventListener('submit', recordPayment);
+
+      const dueDateInput = document.getElementById('dueDate');
+      dueDateInput.addEventListener('change', function() {
+        const invoiceDate = document.getElementById('invoiceDate').value;
+        if (this.value <= invoiceDate) {
+          showToast('Due date must be after invoice date.', 'warning');
+          this.value = '';
+        }
+      });
+    }
+
+    // -------------------------------------------------
+    // 5. Bill Table Population & Filtering
+    // -------------------------------------------------
+    function populateBillTable(filteredBills = null) {
+      const bills = filteredBills || billDB;
+      const start = (currentPage - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      const pageBills = bills.slice(start, end);
+
+      const tbody = document.getElementById('billTableBody');
+      tbody.innerHTML = pageBills.map(b => `
+        <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+          <td class="py-3 px-4">${b.id}</td>
+          <td class="py-3 px-4 font-medium">${b.vendorName}</td>
+          <td class="py-3 px-4">₹${b.amount}</td>
+          <td class="py-3 px-4">${new Date(b.invoiceDate).toLocaleDateString()}</td>
+          <td class="py-3 px-4">${new Date(b.dueDate).toLocaleDateString()}</td>
+          <td class="py-3 px-4">
+            <span class="px-2 py-1 ${
+              b.status === 'approved' ? 'bg-green-100 text-green-800' :
+              b.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+              'bg-red-100 text-red-800'
+            } rounded-full text-xs">${b.status.charAt(0).toUpperCase() + b.status.slice(1)}</span>
+          </td>
+          <td class="py-3 px-4">
+            <button onclick="viewBill('${b.id}')" class="text-primary hover:underline mr-2">View</button>
+            <button onclick="editBill('${b.id}')" class="text-blue-600 hover:underline mr-2">Edit</button>
+            <button onclick="deleteBill('${b.id}')" class="text-red-600 hover:underline">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function filterBills() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const status = document.getElementById('statusFilter').value;
+      const filtered = billDB.filter(b => 
+        (b.vendorName.toLowerCase().includes(search) || b.id.toLowerCase().includes(search) || b.description.toLowerCase().includes(search)) &&
+        (!status || b.status === status)
+      );
+      currentPage = 1;
+      populateBillTable(filtered);
+      updatePagination(filtered.length);
+    }
+
+    function updatePagination(total = billDB.length) {
+      const totalPages = Math.ceil(total / itemsPerPage);
+      document.getElementById('prevPage').disabled = currentPage === 1;
+      document.getElementById('nextPage').disabled = currentPage === totalPages;
+      document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
+      document.getElementById('showingCount').textContent = Math.min(currentPage * itemsPerPage, total);
+      document.getElementById('totalCount').textContent = Math.min((currentPage - 1) * itemsPerPage + 1, total);
+      document.getElementById('totalBills').textContent = total;
+    }
+
+    function getTotalPages() {
+      return Math.ceil(billDB.length / itemsPerPage);
+    }
+
+    // -------------------------------------------------
+    // 6. Payment Table Population & Filtering
+    // -------------------------------------------------
+    function populatePaymentTable(filteredPayments = null) {
+      const payments = filteredPayments || billDB.filter(b => b.payment && b.payment.paid);
+      const start = (paymentCurrentPage - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      const pagePayments = payments.slice(start, end);
+
+      const tbody = document.getElementById('paymentTableBody');
+      tbody.innerHTML = pagePayments.map(b => {
+        const p = b.payment;
+        return `
+          <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+            <td class="py-3 px-4">${p.id || b.id + '-PAY'}</td>
+            <td class="py-3 px-4">${b.id}</td>
+            <td class="py-3 px-4 font-medium">${b.vendorName}</td>
+            <td class="py-3 px-4">₹${b.amount}</td>
+            <td class="py-3 px-4">${new Date(p.date).toLocaleDateString()}</td>
+            <td class="py-3 px-4">${p.method}</td>
+            <td class="py-3 px-4">${p.transactionId}</td>
+            <td class="py-3 px-4">
+              <button onclick="viewBill('${b.id}')" class="text-primary hover:underline">View Bill</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterPayments() {
+      const search = document.getElementById('paymentSearchInput').value.toLowerCase();
+      const status = document.getElementById('paymentStatusFilter').value;
+      const filtered = billDB.filter(b => b.payment && b.payment.paid &&
+        (b.vendorName.toLowerCase().includes(search) || b.id.toLowerCase().includes(search)) &&
+        (!status || status === 'paid')
+      );
+      paymentCurrentPage = 1;
+      populatePaymentTable(filtered);
+      updatePaymentPagination(filtered.length);
+    }
+
+    function updatePaymentPagination(total = billDB.filter(b => b.payment && b.payment.paid).length) {
+      const totalPages = Math.ceil(total / itemsPerPage);
+      document.getElementById('paymentPrevPage').disabled = paymentCurrentPage === 1;
+      document.getElementById('paymentNextPage').disabled = paymentCurrentPage === totalPages;
+      document.getElementById('paymentPageInfo').textContent = `Page ${paymentCurrentPage} of ${totalPages}`;
+      document.getElementById('paymentShowingCount').textContent = Math.min(paymentCurrentPage * itemsPerPage, total);
+      document.getElementById('paymentTotalCount').textContent = Math.min((paymentCurrentPage - 1) * itemsPerPage + 1, total);
+      document.getElementById('totalPayments').textContent = total;
+    }
+
+    function getPaymentTotalPages() {
+      return Math.ceil(billDB.filter(b => b.payment && b.payment.paid).length / itemsPerPage);
+    }
+
+    function exportPayments() {
+      // Simple CSV export simulation
+      const payments = billDB.filter(b => b.payment && b.payment.paid);
+      let csv = 'Payment ID,Bill ID,Vendor,Amount,Payment Date,Method,Transaction ID\n';
+      payments.forEach(b => {
+        const p = b.payment;
+        csv += `"${p.id || b.id + '-PAY'}","${b.id}","${b.vendorName}","${b.amount}","${p.date}","${p.method}","${p.transactionId}"\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'payment_history.csv';
+      a.click();
+      showToast('Payments exported successfully!', 'success');
+    }
+
+    function populateVendorSelect() {
+      const select = document.getElementById('vendorSelect');
+      select.innerHTML = '<option value="">Select vendor</option>';
+      vendorDB.filter(v => v.status === 'approved').forEach(v => {
+        const option = document.createElement('option');
+        option.value = v.id;
+        option.textContent = v.name;
+        select.appendChild(option);
+      });
+    }
+
+    // -------------------------------------------------
+    // 7. Modal Functions
+    // -------------------------------------------------
+    function openAddBillModal() {
+      document.getElementById('billModalTitle').textContent = 'Add New Bill';
+      document.getElementById('billForm').reset();
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('invoiceDate').value = today;
+      document.getElementById('dueDate').value = new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0];
+      currentBill = null;
+      document.getElementById('billModal').classList.remove('hidden');
+    }
+
+    function editBill(id) {
+      currentBill = billDB.find(b => b.id === id);
+      if (currentBill) {
+        document.getElementById('billModalTitle').textContent = 'Edit Bill';
+        document.getElementById('vendorSelect').value = currentBill.vendorId;
+        document.getElementById('billAmount').value = currentBill.amount;
+        document.getElementById('invoiceDate').value = currentBill.invoiceDate;
+        document.getElementById('dueDate').value = currentBill.dueDate;
+        document.getElementById('billDescription').value = currentBill.description || '';
+        document.getElementById('billModal').classList.remove('hidden');
+      }
+    }
+
+    function viewBill(id) {
+      currentBill = billDB.find(b => b.id === id);
+      if (currentBill) {
+        const approveBtn = document.getElementById('approveBillBtn');
+        const rejectBtn = document.getElementById('rejectBillBtn');
+        const recordPaymentBtn = document.getElementById('recordPaymentBtn');
+        approveBtn.classList.add('hidden');
+        rejectBtn.classList.add('hidden');
+        recordPaymentBtn.classList.add('hidden');
+
+        if (currentBill.status === 'pending') {
+          approveBtn.classList.remove('hidden');
+          rejectBtn.classList.remove('hidden');
+        } else if (currentBill.status === 'approved' && (!currentBill.payment || !currentBill.payment.paid)) {
+          recordPaymentBtn.classList.remove('hidden');
+        }
+
+        document.getElementById('viewBillBody').innerHTML = `
+          <div class="space-y-2">
+            <div><strong>ID:</strong> ${currentBill.id}</div>
+            <div><strong>Vendor:</strong> ${currentBill.vendorName}</div>
+            <div><strong>Amount:</strong> ₹${currentBill.amount}</div>
+            <div><strong>Invoice Date:</strong> ${new Date(currentBill.invoiceDate).toLocaleDateString()}</div>
+            <div><strong>Due Date:</strong> ${new Date(currentBill.dueDate).toLocaleDateString()}</div>
+            <div><strong>Description:</strong> ${currentBill.description || 'N/A'}</div>
+            ${currentBill.invoiceFile ? `<div><strong>Invoice:</strong> <a href="#" class="text-primary hover:underline">Download ${currentBill.invoiceFile}</a></div>` : ''}
+            <div><strong>Status:</strong> <span class="px-2 py-1 ${
+              currentBill.status === 'approved' ? 'bg-green-100 text-green-800' :
+              currentBill.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+              'bg-red-100 text-red-800'
+            } rounded-full text-xs">${currentBill.status}</span></div>
+            ${currentBill.payment ? `
+              <div><strong>Payment Details:</strong></div>
+              <div><strong>Date:</strong> ${new Date(currentBill.payment.date).toLocaleDateString()}</div>
+              <div><strong>Method:</strong> ${currentBill.payment.method}</div>
+              <div><strong>Transaction ID:</strong> ${currentBill.payment.transactionId}</div>
+            ` : ''}
+          </div>
+        `;
+        document.getElementById('viewBillModal').classList.remove('hidden');
+      }
+    }
+
+    function closeBillModal() {
+      document.getElementById('billModal').classList.add('hidden');
+      document.getElementById('billForm').reset();
+      currentBill = null;
+    }
+
+    function closeViewBillModal() {
+      document.getElementById('viewBillModal').classList.add('hidden');
+    }
+
+    function openPaymentModal() {
+      if (currentBill && currentBill.status === 'approved') {
+        document.getElementById('paymentDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('paymentModal').classList.remove('hidden');
+      }
+    }
+
+    function closePaymentModal() {
+      document.getElementById('paymentModal').classList.add('hidden');
+      document.getElementById('paymentForm').reset();
+    }
+
+    function saveBill(e) {
+      e.preventDefault();
+      const selectedVendor = vendorDB.find(v => v.id === document.getElementById('vendorSelect').value);
+      if (!selectedVendor) {
+        showToast('Please select a valid vendor.', 'warning');
+        return;
+      }
+
+      if (!currentBill) {
+        // Add new
+        const newId = `BILL/2025/${String(billDB.length + 1).padStart(3, '0')}`;
+        const newBill = {
+          id: newId,
+          vendorId: selectedVendor.id,
+          vendorName: selectedVendor.name,
+          amount: document.getElementById('billAmount').value,
+          invoiceDate: document.getElementById('invoiceDate').value,
+          dueDate: document.getElementById('dueDate').value,
+          description: document.getElementById('billDescription').value,
+          status: 'pending',
+          invoiceFile: document.getElementById('billInvoice').files[0]?.name || '',
+          payment: null
+        };
+        billDB.push(newBill);
+        showToast('Bill added successfully! Awaiting verification.', 'success');
+      } else {
+        // Edit existing
+        currentBill.vendorId = selectedVendor.id;
+        currentBill.vendorName = selectedVendor.name;
+        currentBill.amount = document.getElementById('billAmount').value;
+        currentBill.invoiceDate = document.getElementById('invoiceDate').value;
+        currentBill.dueDate = document.getElementById('dueDate').value;
+        currentBill.description = document.getElementById('billDescription').value;
+        if (document.getElementById('billInvoice').files[0]) {
+          currentBill.invoiceFile = document.getElementById('billInvoice').files[0].name;
+        }
+        showToast('Bill updated successfully!', 'success');
+      }
+      filterBills(); // Refresh table
+      closeBillModal();
+    }
+
+    function recordPayment(e) {
+      e.preventDefault();
+      if (currentBill && currentBill.status === 'approved') {
+        currentBill.payment = {
+          id: `PAY/${Date.now()}`,
+          date: document.getElementById('paymentDate').value,
+          method: document.getElementById('paymentMethod').value,
+          transactionId: document.getElementById('transactionId').value,
+          paid: true
+        };
+        currentBill.status = 'paid'; // Update status to paid
+        filterBills();
+        filterPayments();
+        showToast('Payment recorded successfully!', 'success');
+        closePaymentModal();
+        closeViewBillModal();
+      }
+    }
+
+    function approveBill() {
+      if (currentBill) {
+        currentBill.status = 'approved';
+        filterBills();
+        showToast('Bill approved for payment!', 'success');
+        closeViewBillModal();
+      }
+    }
+
+    function rejectBill() {
+      if (currentBill) {
+        currentBill.status = 'rejected';
+        filterBills();
+        showToast('Bill rejected!', 'danger');
+        closeViewBillModal();
+      }
+    }
+
+    function deleteBill(id) {
+      if (confirm('Delete this bill? This action cannot be undone.')) {
+        billDB = billDB.filter(b => b.id !== id);
+        filterBills();
+        filterPayments();
+        showToast('Bill deleted!', 'warning');
+      }
+    }
+
+    // -------------------------------------------------
+    // 8. Demo
+    // -------------------------------------------------
+    document.getElementById('notifyBtn').addEventListener('click', () => showToast('5 pending bills for review.', 'info'));
+
+    // Initialize on load
+    initBillPage();
+  </script>
+</body>
+</html>
